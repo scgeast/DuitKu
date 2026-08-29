@@ -477,7 +477,6 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
-// TIDAK memanggil enablePersistence — menghindari error localStorage di sandboxed iframe
 
 /* ===================== DATA KONSTANTA ===================== */
 var BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -493,12 +492,16 @@ var CATS = {
         {v:'makanan',l:'Makanan',ic:'fa-utensils'},{v:'transportasi',l:'Transportasi',ic:'fa-car'},
         {v:'belanja',l:'Belanja',ic:'fa-bag-shopping'},{v:'tagihan',l:'Tagihan',ic:'fa-file-invoice'},
         {v:'kesehatan',l:'Kesehatan',ic:'fa-heart-pulse'},{v:'hiburan',l:'Hiburan',ic:'fa-gamepad'},
-        {v:'pendidikan',l:'Pendidikan',ic:'fa-graduation-cap'},{v:'lain_keluar',l:'Lainnya',ic:'fa-ellipsis'}
+        {v:'pendidikan',l:'Pendidikan',ic:'fa-graduation-cap'},
+        {v:'rokok',l:'Cigar/Cigarette',ic:'fa-smoking'}, // <-- KATEGORI BARU
+        {v:'lain_keluar',l:'Lainnya',ic:'fa-ellipsis'}
     ]
 };
 var CAT_COLORS = {
     makanan:'#ff5470',transportasi:'#ffa94d',belanja:'#ffd43b',tagihan:'#69db7c',
-    kesehatan:'#38d9a9',hiburan:'#4dabf7',pendidikan:'#748ffc',lain_keluar:'#868e96'
+    kesehatan:'#38d9a9',hiburan:'#4dabf7',pendidikan:'#748ffc',
+    rokok:'#e67e22', // <-- WARNA ORANGE UNTUK ROKOK
+    lain_keluar:'#868e96'
 };
 var catLookup = {};
 CATS.income.concat(CATS.expense).forEach(function(c){ catLookup[c.v] = c; });
@@ -569,9 +572,8 @@ document.getElementById('confirmCancel').addEventListener('click', hideConfirm);
 document.getElementById('confirmOk').addEventListener('click', function(){ if(confirmCallback) confirmCallback(); hideConfirm(); });
 document.getElementById('confirmModal').addEventListener('click', function(e){ if(e.target===this) hideConfirm(); });
 
-/* ===================== DATA STORE (Firestore + localStorage fallback) ===================== */
+/* ===================== DATA STORE ===================== */
 var store = {
-    /* --- Inisialisasi: coba Firestore, fallback ke localStorage --- */
     init: function() {
         this._listenStorageEvent();
         this._tryFirestore();
@@ -581,7 +583,6 @@ var store = {
         var self = this;
         try {
             setSyncStatus('syncing', 'Menghubungkan...');
-            // Timeout 8 detik: jika Firestore tidak merespon, switch ke lokal
             var timeoutId = setTimeout(function(){
                 if (storeMode === 'unknown') self._switchToLocal('Timeout koneksi');
             }, 8000);
@@ -591,7 +592,7 @@ var store = {
                 .onSnapshot(
                     function(snapshot) {
                         clearTimeout(timeoutId);
-                        if (storeMode === 'local') return; // Sudah switch, abaikan
+                        if (storeMode === 'local') return;
                         storeMode = 'firestore';
                         setSyncStatus('online', 'Sinkronisasi Real-time');
                         self._processFirestoreChanges(snapshot);
@@ -639,7 +640,7 @@ var store = {
     },
 
     _switchToLocal: function(reason) {
-        if (storeMode === 'local') return; // Sudah lokal
+        if (storeMode === 'local') return;
         if (unsubscribe) { try{unsubscribe();}catch(e){} unsubscribe = null; }
         storeMode = 'local';
         setSyncStatus('offline', 'Mode Lokal');
@@ -655,12 +656,10 @@ var store = {
         document.getElementById('mainContent').style.display = 'block';
     },
 
-    /* --- CRUD operations --- */
     save: async function(txData) {
         if (storeMode === 'firestore') {
             txData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
             await db.collection('transactions').add(txData);
-            // Listener akan menangani update UI
         } else {
             txData.id = uid();
             txData.createdAt = new Date().toISOString();
@@ -689,7 +688,6 @@ var store = {
         }
     },
 
-    /* --- localStorage helpers --- */
     _loadLocal: function() {
         try { var d = localStorage.getItem('duitku_txs'); return d ? JSON.parse(d) : []; }
         catch(e) { return []; }
@@ -708,7 +706,6 @@ var store = {
         });
     },
 
-    /* --- Seed data --- */
     _seedFirestore: async function() {
         var samples = this._getSeedData();
         try {
@@ -750,6 +747,10 @@ var store = {
             {type:'expense',amount:250000,category:'pendidikan',date:y+'-'+pad(m+1)+'-22',note:'Buku & kursus online'},
             {type:'expense',amount:180000,category:'makanan',date:y+'-'+pad(m+1)+'-14',note:'Makan di luar meeting'},
             {type:'expense',amount:650000,category:'belanja',date:y+'-'+pad(m+1)+'-08',note:'Beli pakaian kerja baru'},
+            // Contoh data rokok
+            {type:'expense',amount:45000,category:'rokok',date:y+'-'+pad(m+1)+'-09',note:'Beli rokok 1 bungkus'},
+            {type:'expense',amount:55000,category:'rokok',date:y+'-'+pad(m+1)+'-16',note:'Beli rokok + kopi'},
+            {type:'expense',amount:120000,category:'rokok',date:y+'-'+pad(m+1)+'-23',note:'Stok rokok 1 slof'},
         ];
     }
 };
@@ -1117,7 +1118,7 @@ function renderAnalytics(){
     var days={}; ex.forEach(function(t){var d=new Date(t.date).getDate();days[d]=(days[d]||0)+t.amount;}); var dayKeys=Object.keys(days).sort(function(a,b){return days[b]-days[a];});
     document.getElementById('spendingHabits').innerHTML=dayKeys.length?'<div class="metric-row"><span class="metric-name">Hari paling boros</span><span class="metric-value">Tanggal '+dayKeys[0]+'</span></div><div class="metric-row"><span class="metric-name">Nilai terbesar dalam 1 hari</span><span class="metric-value">'+fmtRp(days[dayKeys[0]])+'</span></div><div class="metric-row"><span class="metric-name">Jumlah transaksi keluar</span><span class="metric-value">'+ex.length+'</span></div>':'<div class="section-sub">Belum ada data kebiasaan.</div>';
 }
-var DEFAULT_BUDGET={makanan:2000000,transportasi:1000000,belanja:1000000,tagihan:1500000,kesehatan:500000,hiburan:500000,pendidikan:500000};
+var DEFAULT_BUDGET={makanan:2000000,transportasi:1000000,belanja:1000000,tagihan:1500000,kesehatan:500000,hiburan:500000,pendidikan:500000,rokok:300000};
 function getBudgets(){try{return Object.assign({},DEFAULT_BUDGET,JSON.parse(localStorage.getItem('duitku_budget')||'{}'));}catch(e){return Object.assign({},DEFAULT_BUDGET);}}
 function renderBudget(){
     var b=getBudgets(), txs=getMonthTxs().filter(function(t){return t.type==='expense';}), used={}; txs.forEach(function(t){used[t.category]=(used[t.category]||0)+t.amount;});
