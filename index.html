@@ -271,6 +271,7 @@
         .toast.ok { background: #0d9b76; }
         .toast.err { background: #c0392b; }
         .toast.inf { background: #2471a3; }
+        .toast.sync { background: #6c5ce7; }
         @keyframes tIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
         @keyframes tOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(30px); } }
 
@@ -281,6 +282,32 @@
         /* === PULSE === */
         .dot-live { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: livePulse 2s ease-in-out infinite; }
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
+
+        /* === REAL-TIME INDICATOR === */
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--fg-muted);
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+        .sync-status .sync-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+        }
+        .sync-status .sync-dot.syncing {
+            animation: livePulse 1s ease-in-out infinite;
+        }
+        .sync-status .sync-dot.offline {
+            background: var(--fg-muted);
+        }
 
         /* === SCROLLBAR === */
         ::-webkit-scrollbar { width: 5px; }
@@ -362,7 +389,13 @@
             </div>
             <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">Duit<span style="color:var(--accent)">Ku</span></h1>
         </div>
-        <button class="btn-add" id="btnAdd" aria-label="Tambah transaksi baru"><i class="fa-solid fa-plus"></i> Tambah</button>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="sync-status" id="syncStatus">
+                <span class="sync-dot syncing" id="syncDot"></span>
+                <span id="syncLabel">Sinkronisasi Real-time</span>
+            </div>
+            <button class="btn-add" id="btnAdd" aria-label="Tambah transaksi baru"><i class="fa-solid fa-plus"></i> Tambah</button>
+        </div>
     </header>
 
     <!-- Bulan Nav -->
@@ -442,7 +475,7 @@
     'use strict';
 
     // ============================
-    // FIREBASE CONFIGURATION (DARI FIREBASE CONSOLE)
+    // FIREBASE CONFIGURATION
     // ============================
     const firebaseConfig = {
         apiKey: "AIzaSyAvXEBgOj2eZ0u0QpP_f4jeFYzPuwqXAgI",
@@ -454,11 +487,9 @@
         measurementId: "G-CSY3DTMSX7"
     };
 
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     
-    // Aktifkan offline persistence
     db.enablePersistence({ synchronizeTabs: true })
         .catch(err => console.warn('Firestore persistence error:', err));
 
@@ -506,6 +537,8 @@
     var bChart = null;
     var allTxs = [];
     var loading = false;
+    var isInitialLoad = true; // Untuk mencegah toast notifikasi di awal
+    var unsubscribe = null; // Untuk cleanup listener
 
     // ============================
     // HELPERS
@@ -515,83 +548,41 @@
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
     // ============================
-    // FIRESTORE OPERATIONS
-    // ============================
-    
-    async function loadTxsFromFirestore() {
-        try {
-            const snapshot = await db.collection('transactions')
-                .orderBy('date', 'desc')
-                .get();
-            
-            const txs = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                txs.push({
-                    id: doc.id,
-                    type: data.type,
-                    amount: data.amount,
-                    category: data.category,
-                    date: data.date,
-                    note: data.note || ''
-                });
-            });
-            
-            allTxs = txs;
-            return txs;
-        } catch (error) {
-            console.error('Error loading transactions:', error);
-            toast('Gagal memuat data dari server', 'err');
-            return [];
-        }
-    }
-
-    async function saveTxToFirestore(tx) {
-        try {
-            const docRef = await db.collection('transactions').add({
-                type: tx.type,
-                amount: tx.amount,
-                category: tx.category,
-                date: tx.date,
-                note: tx.note || '',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            const newTx = { ...tx, id: docRef.id };
-            allTxs.push(newTx);
-            return newTx;
-        } catch (error) {
-            console.error('Error saving transaction:', error);
-            throw error;
-        }
-    }
-
-    async function deleteTxFromFirestore(id) {
-        try {
-            await db.collection('transactions').doc(id).delete();
-            allTxs = allTxs.filter(t => t.id !== id);
-            return true;
-        } catch (error) {
-            console.error('Error deleting transaction:', error);
-            throw error;
-        }
-    }
-
-    // ============================
     // TOAST
     // ============================
     function toast(msg, type) {
         var box = document.getElementById('toastBox');
         var el = document.createElement('div');
         el.className = 'toast ' + (type||'inf');
-        var ic = type==='ok'?'fa-circle-check':type==='err'?'fa-circle-exclamation':'fa-circle-info';
+        var ic = type==='ok'?'fa-circle-check':type==='err'?'fa-circle-exclamation':type==='sync'?'fa-sync-alt':'fa-circle-info';
         el.innerHTML = '<i class="fa-solid '+ic+'"></i> '+msg;
         box.appendChild(el);
         setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 3000);
     }
 
     // ============================
-    // RENDER
+    // SYNC STATUS INDICATOR
+    // ============================
+    function setSyncStatus(status, message) {
+        var dot = document.getElementById('syncDot');
+        var label = document.getElementById('syncLabel');
+        
+        if (status === 'syncing') {
+            dot.className = 'sync-dot syncing';
+            label.textContent = message || 'Sinkronisasi...';
+        } else if (status === 'online') {
+            dot.className = 'sync-dot';
+            dot.style.background = 'var(--accent)';
+            label.textContent = message || 'Sinkronisasi Real-time';
+        } else if (status === 'offline') {
+            dot.className = 'sync-dot offline';
+            dot.style.background = 'var(--fg-muted)';
+            label.textContent = message || 'Offline - Data lokal';
+        }
+    }
+
+    // ============================
+    // RENDER FUNCTIONS
     // ============================
     function renderAll() {
         renderMonthLabel();
@@ -762,6 +753,98 @@
     }
 
     // ============================
+    // FIRESTORE REAL-TIME LISTENER (CORE)
+    // ============================
+    function setupRealtimeListener() {
+        // Unsubscribe dari listener sebelumnya jika ada
+        if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+        }
+
+        setSyncStatus('syncing', 'Menghubungkan...');
+
+        // Setup listener real-time
+        unsubscribe = db.collection('transactions')
+            .orderBy('date', 'desc')
+            .onSnapshot(function(snapshot) {
+                // Update status
+                setSyncStatus('online', 'Sinkronisasi Real-time');
+
+                // Proses data yang berubah
+                var newTxs = [];
+                snapshot.docChanges().forEach(function(change) {
+                    var doc = change.doc;
+                    var data = doc.data();
+                    
+                    // Cek apakah data valid
+                    if (!data || !data.type || !data.amount) {
+                        console.warn('Data tidak valid:', doc.id);
+                        return;
+                    }
+
+                    var tx = {
+                        id: doc.id,
+                        type: data.type,
+                        amount: data.amount,
+                        category: data.category,
+                        date: data.date,
+                        note: data.note || ''
+                    };
+
+                    // Update local data berdasarkan perubahan
+                    if (change.type === 'added') {
+                        // Cek apakah sudah ada (hindari duplikat)
+                        var exists = allTxs.some(function(t) { return t.id === doc.id; });
+                        if (!exists) {
+                            allTxs.push(tx);
+                            // Tampilkan notifikasi untuk perubahan dari perangkat lain (bukan initial load)
+                            if (!isInitialLoad) {
+                                var cat = catLookup[tx.category] || {l:tx.category};
+                                var label = tx.type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+                                toast(label + ' baru: ' + (tx.note || cat.l) + ' ' + fmtRp(tx.amount), 'sync');
+                            }
+                        }
+                    } else if (change.type === 'modified') {
+                        // Update data yang dimodifikasi
+                        var index = allTxs.findIndex(function(t) { return t.id === doc.id; });
+                        if (index !== -1) {
+                            allTxs[index] = tx;
+                        } else {
+                            allTxs.push(tx);
+                        }
+                        if (!isInitialLoad) {
+                            toast('Transaksi diperbarui', 'sync');
+                        }
+                    } else if (change.type === 'removed') {
+                        allTxs = allTxs.filter(function(t) { return t.id !== doc.id; });
+                        if (!isInitialLoad) {
+                            toast('Transaksi dihapus', 'sync');
+                        }
+                    }
+                });
+
+                // Render ulang UI
+                renderAll();
+
+                // Tandai initial load selesai
+                if (isInitialLoad) {
+                    isInitialLoad = false;
+                    // Cek apakah ada data
+                    if (allTxs.length === 0) {
+                        // Seed data jika kosong
+                        seedData();
+                    }
+                }
+
+            }, function(error) {
+                console.error('Error Firestore listener:', error);
+                setSyncStatus('offline', 'Offline - Data lokal');
+                toast('Koneksi terputus, menggunakan data lokal', 'err');
+            });
+    }
+
+    // ============================
     // MODAL
     // ============================
     var modal = document.getElementById('modal');
@@ -806,6 +889,9 @@
         this.value = v ? parseInt(v,10).toLocaleString('id-ID') : '';
     });
 
+    // ============================
+    // SAVE TRANSACTION (dengan real-time)
+    // ============================
     formTx.addEventListener('submit', async function(e){
         e.preventDefault();
         
@@ -826,15 +912,23 @@
         var tx = { type:type, amount:amount, category:category, date:date, note:note };
 
         try {
-            await saveTxToFirestore(tx);
+            // Save ke Firestore - listener akan otomatis menangkap perubahan
+            await db.collection('transactions').add({
+                type: tx.type,
+                amount: tx.amount,
+                category: tx.category,
+                date: tx.date,
+                note: tx.note || '',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
             
+            // Update bulan jika perlu
             var td = new Date(date);
             if(td.getFullYear()!==curMonth.getFullYear() || td.getMonth()!==curMonth.getMonth()){
                 curMonth = new Date(td.getFullYear(), td.getMonth(), 1);
             }
 
             closeModal();
-            renderAll();
             toast((type==='income'?'Pemasukan':'Pengeluaran')+' berhasil disimpan','ok');
         } catch (error) {
             toast('Gagal menyimpan transaksi: ' + error.message, 'err');
@@ -844,7 +938,7 @@
     });
 
     // ============================
-    // EVENT DELEGATION
+    // DELETE TRANSACTION (dengan real-time)
     // ============================
     document.getElementById('txList').addEventListener('click', async function(e){
         var btn = e.target.closest('.btn-del');
@@ -859,8 +953,8 @@
         
         loading = true;
         try {
-            await deleteTxFromFirestore(id);
-            renderAll();
+            // Delete dari Firestore - listener akan otomatis menangkap perubahan
+            await db.collection('transactions').doc(id).delete();
             toast('Transaksi dihapus','inf');
         } catch (error) {
             toast('Gagal menghapus transaksi: ' + error.message, 'err');
@@ -869,6 +963,9 @@
         }
     });
 
+    // ============================
+    // EVENT LISTENERS
+    // ============================
     document.getElementById('filterBar').addEventListener('click', function(e){
         var tab = e.target.closest('.ftab');
         if(!tab) return;
@@ -878,9 +975,6 @@
         renderTxList();
     });
 
-    // ============================
-    // NAVIGASI
-    // ============================
     document.getElementById('btnAdd').addEventListener('click', openModal);
     document.getElementById('btnCloseModal').addEventListener('click', closeModal);
     document.getElementById('btnPrev').addEventListener('click', function(){
@@ -891,16 +985,13 @@
     });
 
     modal.addEventListener('click', function(e){ if(e.target===this) closeModal(); });
-
-    document.addEventListener('keydown', function(e){
-        if(e.key==='Escape') closeModal();
-    });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
 
     tBtnIn.addEventListener('click', function(){ setType('income'); });
     tBtnOut.addEventListener('click', function(){ setType('expense'); });
 
     // ============================
-    // SEED DATA (jika kosong)
+    // SEED DATA
     // ============================
     async function seedData() {
         if (allTxs.length > 0) return;
@@ -922,9 +1013,16 @@
         
         try {
             for (const sample of samples) {
-                await saveTxToFirestore(sample);
+                await db.collection('transactions').add({
+                    type: sample.type,
+                    amount: sample.amount,
+                    category: sample.category,
+                    date: sample.date,
+                    note: sample.note || '',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
             }
-            toast('Data contoh berhasil disimpan ke server','ok');
+            toast('Data contoh berhasil disimpan','ok');
         } catch (error) {
             console.error('Error seeding data:', error);
         }
@@ -933,13 +1031,20 @@
     // ============================
     // INIT
     // ============================
-    async function init() {
-        await loadTxsFromFirestore();
-        await seedData();
-        renderAll();
+    function init() {
+        // Setup real-time listener
+        setupRealtimeListener();
     }
 
+    // Mulai aplikasi
     init();
+
+    // Cleanup listener saat halaman ditutup
+    window.addEventListener('beforeunload', function() {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    });
 
 })();
 </script>
