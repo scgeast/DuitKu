@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DuitKu — Catatan Keuangan Bulanan</title>
+    
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    
+    <!-- Firebase SDK (CDN) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -162,7 +169,8 @@
             font-size: 15px;
             font-family: 'DM Sans', sans-serif;
             transition: all 0.25s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            display: flex;
+            align-items: center; justify-content: center; gap: 8px;
         }
         .btn-submit:hover { box-shadow: 0 6px 28px rgba(0,224,160,0.3); transform: translateY(-1px); }
         .btn-submit:active { transform: translateY(0); }
@@ -434,50 +442,29 @@
     'use strict';
 
     // ============================
-    // STORAGE WRAPPER (fallback memori jika localStorage diblokir)
+    // FIREBASE CONFIGURATION (DARI FIREBASE CONSOLE)
     // ============================
-    var memoryStore = {};
-    var useMemory = false;
+    const firebaseConfig = {
+        apiKey: "AIzaSyAvXEBgOj2eZ0u0QpP_f4jeFYzPuwqXAgI",
+        authDomain: "duitku-e62ad.firebaseapp.com",
+        projectId: "duitku-e62ad",
+        storageBucket: "duitku-e62ad.firebasestorage.app",
+        messagingSenderId: "610552931456",
+        appId: "1:610552931456:web:632edf3e986ada0a0b7265",
+        measurementId: "G-CSY3DTMSX7"
+    };
 
-    try {
-        // Tes akses localStorage
-        var _test = '__duitku_test__';
-        localStorage.setItem(_test, '1');
-        localStorage.removeItem(_test);
-    } catch(e) {
-        useMemory = true;
-    }
-
-    function storeGet(key) {
-        try {
-            if (useMemory) return memoryStore[key] || null;
-            return localStorage.getItem(key);
-        } catch(e) {
-            return memoryStore[key] || null;
-        }
-    }
-    function storeSet(key, val) {
-        try {
-            if (useMemory) { memoryStore[key] = val; return; }
-            localStorage.setItem(key, val);
-        } catch(e) {
-            memoryStore[key] = val;
-        }
-    }
-    function storeRemove(key) {
-        try {
-            if (useMemory) { delete memoryStore[key]; return; }
-            localStorage.removeItem(key);
-        } catch(e) {
-            delete memoryStore[key];
-        }
-    }
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // Aktifkan offline persistence
+    db.enablePersistence({ synchronizeTabs: true })
+        .catch(err => console.warn('Firestore persistence error:', err));
 
     // ============================
     // DATA
     // ============================
-    var TXS_KEY = 'duitku_txs2';
-    var MONTH_KEY = 'duitku_mo2';
     var BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
     var HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
@@ -507,7 +494,6 @@
         pendidikan:'#748ffc', lain_keluar:'#868e96'
     };
 
-    // Bangun peta lookup
     var catLookup = {};
     CATS.income.concat(CATS.expense).forEach(function(c){ catLookup[c.v] = c; });
 
@@ -518,6 +504,8 @@
     var curFilter = 'all';
     var dChart = null;
     var bChart = null;
+    var allTxs = [];
+    var loading = false;
 
     // ============================
     // HELPERS
@@ -526,24 +514,67 @@
     function pad(n) { return n < 10 ? '0'+n : ''+n; }
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
-    function loadTxs() {
-        try { return JSON.parse(storeGet(TXS_KEY)) || []; }
-        catch(e) { return []; }
+    // ============================
+    // FIRESTORE OPERATIONS
+    // ============================
+    
+    async function loadTxsFromFirestore() {
+        try {
+            const snapshot = await db.collection('transactions')
+                .orderBy('date', 'desc')
+                .get();
+            
+            const txs = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                txs.push({
+                    id: doc.id,
+                    type: data.type,
+                    amount: data.amount,
+                    category: data.category,
+                    date: data.date,
+                    note: data.note || ''
+                });
+            });
+            
+            allTxs = txs;
+            return txs;
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            toast('Gagal memuat data dari server', 'err');
+            return [];
+        }
     }
-    function saveTxs(arr) { storeSet(TXS_KEY, JSON.stringify(arr)); }
 
-    function loadMonth() {
-        var s = storeGet(MONTH_KEY);
-        if (s) { var p = s.split('-'); curMonth = new Date(+p[0], +p[1], 1); }
+    async function saveTxToFirestore(tx) {
+        try {
+            const docRef = await db.collection('transactions').add({
+                type: tx.type,
+                amount: tx.amount,
+                category: tx.category,
+                date: tx.date,
+                note: tx.note || '',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            const newTx = { ...tx, id: docRef.id };
+            allTxs.push(newTx);
+            return newTx;
+        } catch (error) {
+            console.error('Error saving transaction:', error);
+            throw error;
+        }
     }
-    function saveMonthState() { storeSet(MONTH_KEY, curMonth.getFullYear()+'-'+curMonth.getMonth()); }
 
-    function monthTxs() {
-        var y = curMonth.getFullYear(), m = curMonth.getMonth();
-        return loadTxs().filter(function(t){
-            var d = new Date(t.date);
-            return d.getFullYear()===y && d.getMonth()===m;
-        }).sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+    async function deleteTxFromFirestore(id) {
+        try {
+            await db.collection('transactions').doc(id).delete();
+            allTxs = allTxs.filter(t => t.id !== id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            throw error;
+        }
     }
 
     // ============================
@@ -567,15 +598,22 @@
         renderStats();
         renderCharts();
         renderTxList();
-        saveMonthState();
     }
 
     function renderMonthLabel() {
         document.getElementById('lblMonth').textContent = BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear();
     }
 
+    function getMonthTxs() {
+        var y = curMonth.getFullYear(), m = curMonth.getMonth();
+        return allTxs.filter(function(t){
+            var d = new Date(t.date);
+            return d.getFullYear()===y && d.getMonth()===m;
+        }).sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+    }
+
     function renderStats() {
-        var txs = monthTxs();
+        var txs = getMonthTxs();
         var inc = 0, exp = 0;
         txs.forEach(function(t){ if(t.type==='income') inc+=t.amount; else exp+=t.amount; });
         var bal = inc - exp;
@@ -597,7 +635,7 @@
     }
 
     function renderCharts() {
-        var txs = monthTxs();
+        var txs = getMonthTxs();
         renderDonut(txs);
         renderBar(txs);
     }
@@ -688,7 +726,7 @@
     }
 
     function renderTxList() {
-        var txs = monthTxs();
+        var txs = getMonthTxs();
         var filtered = curFilter==='all' ? txs : txs.filter(function(t){return t.type===curFilter;});
         var el = document.getElementById('txList');
 
@@ -697,7 +735,6 @@
             return;
         }
 
-        // Kelompokkan per tanggal
         var groups = {};
         filtered.forEach(function(t){ if(!groups[t.date]) groups[t.date]=[]; groups[t.date].push(t); });
 
@@ -764,15 +801,17 @@
         });
     }
 
-    // Format input Rp
     fAmount.addEventListener('input', function(){
         var v = this.value.replace(/\D/g,'');
         this.value = v ? parseInt(v,10).toLocaleString('id-ID') : '';
     });
 
-    // Submit
-    formTx.addEventListener('submit', function(e){
+    formTx.addEventListener('submit', async function(e){
         e.preventDefault();
+        
+        if (loading) return;
+        loading = true;
+        
         var type = fType.value;
         var raw = fAmount.value.replace(/\D/g,'');
         var amount = parseInt(raw, 10);
@@ -780,38 +819,54 @@
         var date = fDate.value;
         var note = fNote.value.trim();
 
-        if(!amount || amount <= 0){ toast('Masukkan jumlah yang valid','err'); fAmount.focus(); return; }
-        if(!category){ toast('Pilih kategori','err'); fCat.focus(); return; }
-        if(!date){ toast('Pilih tanggal','err'); fDate.focus(); return; }
+        if(!amount || amount <= 0){ toast('Masukkan jumlah yang valid','err'); fAmount.focus(); loading = false; return; }
+        if(!category){ toast('Pilih kategori','err'); fCat.focus(); loading = false; return; }
+        if(!date){ toast('Pilih tanggal','err'); fDate.focus(); loading = false; return; }
 
-        var tx = { id:uid(), type:type, amount:amount, category:category, date:date, note:note };
-        var arr = loadTxs();
-        arr.push(tx);
-        saveTxs(arr);
+        var tx = { type:type, amount:amount, category:category, date:date, note:note };
 
-        // Pindah ke bulan transaksi jika berbeda
-        var td = new Date(date);
-        if(td.getFullYear()!==curMonth.getFullYear() || td.getMonth()!==curMonth.getMonth()){
-            curMonth = new Date(td.getFullYear(), td.getMonth(), 1);
+        try {
+            await saveTxToFirestore(tx);
+            
+            var td = new Date(date);
+            if(td.getFullYear()!==curMonth.getFullYear() || td.getMonth()!==curMonth.getMonth()){
+                curMonth = new Date(td.getFullYear(), td.getMonth(), 1);
+            }
+
+            closeModal();
+            renderAll();
+            toast((type==='income'?'Pemasukan':'Pengeluaran')+' berhasil disimpan','ok');
+        } catch (error) {
+            toast('Gagal menyimpan transaksi: ' + error.message, 'err');
+        } finally {
+            loading = false;
         }
-
-        closeModal();
-        renderAll();
-        toast((type==='income'?'Pemasukan':'Pengeluaran')+' berhasil disimpan','ok');
     });
 
     // ============================
-    // EVENT DELEGATION (hapus, filter)
+    // EVENT DELEGATION
     // ============================
-    document.getElementById('txList').addEventListener('click', function(e){
+    document.getElementById('txList').addEventListener('click', async function(e){
         var btn = e.target.closest('.btn-del');
         if(!btn) return;
+        
+        if (loading) return;
+        
         var id = btn.getAttribute('data-id');
         if(!id) return;
-        var arr = loadTxs().filter(function(t){ return t.id !== id; });
-        saveTxs(arr);
-        renderAll();
-        toast('Transaksi dihapus','inf');
+        
+        if (!confirm('Hapus transaksi ini?')) return;
+        
+        loading = true;
+        try {
+            await deleteTxFromFirestore(id);
+            renderAll();
+            toast('Transaksi dihapus','inf');
+        } catch (error) {
+            toast('Gagal menghapus transaksi: ' + error.message, 'err');
+        } finally {
+            loading = false;
+        }
     });
 
     document.getElementById('filterBar').addEventListener('click', function(e){
@@ -824,7 +879,7 @@
     });
 
     // ============================
-    // TOMBOL NAVIGASI
+    // NAVIGASI
     // ============================
     document.getElementById('btnAdd').addEventListener('click', openModal);
     document.getElementById('btnCloseModal').addEventListener('click', closeModal);
@@ -835,23 +890,21 @@
         curMonth.setMonth(curMonth.getMonth()+1); renderAll();
     });
 
-    // Klik overlay tutup modal
     modal.addEventListener('click', function(e){ if(e.target===this) closeModal(); });
 
-    // Keyboard
     document.addEventListener('keydown', function(e){
         if(e.key==='Escape') closeModal();
     });
 
-    // Toggle tipe di modal
     tBtnIn.addEventListener('click', function(){ setType('income'); });
     tBtnOut.addEventListener('click', function(){ setType('expense'); });
 
     // ============================
-    // DATA CONTOH (hanya jika kosong)
+    // SEED DATA (jika kosong)
     // ============================
-    function seedData() {
-        if(loadTxs().length > 0) return;
+    async function seedData() {
+        if (allTxs.length > 0) return;
+        
         var now = new Date();
         var y = now.getFullYear(), m = now.getMonth();
         var samples = [
@@ -866,16 +919,27 @@
             {type:'expense',amount:350000,category:'kesehatan',date:y+'-'+pad(m+1)+'-18',note:'Obat & vitamin bulanan'},
             {type:'expense',amount:250000,category:'pendidikan',date:y+'-'+pad(m+1)+'-22',note:'Buku & kursus online'},
         ];
-        var arr = samples.map(function(s){ return Object.assign({id:uid()}, s); });
-        saveTxs(arr);
+        
+        try {
+            for (const sample of samples) {
+                await saveTxToFirestore(sample);
+            }
+            toast('Data contoh berhasil disimpan ke server','ok');
+        } catch (error) {
+            console.error('Error seeding data:', error);
+        }
     }
 
     // ============================
     // INIT
     // ============================
-    loadMonth();
-    seedData();
-    renderAll();
+    async function init() {
+        await loadTxsFromFirestore();
+        await seedData();
+        renderAll();
+    }
+
+    init();
 
 })();
 </script>
