@@ -659,6 +659,7 @@ var calStartDate = null;
 var calEndDate = null;
 
 /* ===================== SALDO AWAL BULAN - FIXED ===================== */
+
 function getOpeningBalanceKey() {
     return 'opening_balance_' + (selectedOwnerUid || 'default');
 }
@@ -669,7 +670,6 @@ function getOpeningBalance(year, month) {
         var val = localStorage.getItem(key);
         return val ? parseInt(val, 10) : 0;
     } catch(e) { 
-        console.warn('Get opening balance error:', e);
         return 0; 
     }
 }
@@ -678,14 +678,13 @@ function saveOpeningBalance(year, month, amount) {
     try {
         var key = getOpeningBalanceKey() + '_' + year + '_' + month;
         localStorage.setItem(key, String(amount));
-        console.log('💾 Saldo awal disimpan:', key, '=', amount);
+        console.log('💾 Saldo awal DISIMPAN:', key, '=', amount);
     } catch(e) { 
         console.warn('Save opening balance failed:', e); 
     }
 }
 
 function calculatePreviousMonthBalance(year, month) {
-    // Bulan sebelumnya
     var prevMonth = month - 1;
     var prevYear = year;
     if (prevMonth < 0) {
@@ -693,35 +692,27 @@ function calculatePreviousMonthBalance(year, month) {
         prevYear = year - 1;
     }
     
-    // Ambil semua transaksi di bulan sebelumnya
     var prevTxs = allTxs.filter(function(t) {
         var d = new Date(t.date);
         return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
     });
     
-    // Hitung total pemasukan & pengeluaran bulan sebelumnya
     var inc = 0, exp = 0;
     prevTxs.forEach(function(t) {
         if (t.type === 'income') inc += t.amount;
         else exp += t.amount;
     });
     
-    // Ambil saldo awal bulan sebelumnya (jika ada)
     var prevOpening = getOpeningBalance(prevYear, prevMonth);
-    
-    // SALDO AKHIR BULAN LALU = Saldo Awal + (Pemasukan - Pengeluaran)
     var akhirBulanLalu = prevOpening + inc - exp;
     
-    console.log('📊 Perhitungan saldo bulan sebelumnya:');
-    console.log('  - Bulan:', BULAN[prevMonth], prevYear);
+    console.log('📊 Perhitungan saldo bulan:', BULAN[prevMonth], prevYear);
     console.log('  - Saldo awal:', prevOpening);
     console.log('  - Pemasukan:', inc);
     console.log('  - Pengeluaran:', exp);
     console.log('  - Saldo akhir:', akhirBulanLalu);
     
-    // SIMPAN sebagai saldo awal bulan ini
     saveOpeningBalance(year, month, akhirBulanLalu);
-    
     return akhirBulanLalu;
 }
 
@@ -729,25 +720,39 @@ function getCurrentMonthOpeningBalance() {
     var year = curMonth.getFullYear();
     var month = curMonth.getMonth();
     
-    // Cek apakah sudah ada saldo awal yang disimpan untuk bulan ini
     var saved = getOpeningBalance(year, month);
-    if (saved > 0) {
-        console.log('📌 Saldo awal bulan ini (dari cache):', saved);
+    if (saved !== 0) {
         return saved;
     }
     
-    // Jika belum ada, hitung dari bulan sebelumnya
     console.log('🔄 Menghitung saldo awal dari bulan sebelumnya...');
     var prevBalance = calculatePreviousMonthBalance(year, month);
-    console.log('📌 Saldo awal bulan ini (hasil perhitungan):', prevBalance);
     return prevBalance;
 }
 
 /* ===================== HELPERS ===================== */
-function fmtRp(n){ 
+
+// 🔥 FORMAT RUPIAH DENGAN TANDA MINUS
+function fmtRp(n) {
     if (n === undefined || n === null) return 'Rp 0';
-    return 'Rp ' + Math.abs(n).toLocaleString('id-ID'); 
+    if (n < 0) {
+        return '- Rp ' + Math.abs(n).toLocaleString('id-ID');
+    }
+    return 'Rp ' + n.toLocaleString('id-ID');
 }
+
+// 🔥 SET VALUE DENGAN WARMA (untuk saldo negatif)
+function setValueWithColor(element, value, colorPositive, colorNegative) {
+    if (!element) return;
+    if (value < 0) {
+        element.textContent = '- Rp ' + Math.abs(value).toLocaleString('id-ID');
+        element.style.color = colorNegative || 'var(--expense)';
+    } else {
+        element.textContent = 'Rp ' + value.toLocaleString('id-ID');
+        element.style.color = colorPositive || 'var(--accent)';
+    }
+}
+
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -1009,32 +1014,44 @@ function renderStats() {
     var txs = getMonthTxs();
     var stats = getMonthStats(txs);
     
-    // 🔥 AMBIL SALDO AWAL BULAN INI
     var openingBalance = getCurrentMonthOpeningBalance();
-    
-    // 🔥 HITUNG TOTAL SALDO = Saldo Awal + Pemasukan - Pengeluaran
     var totalBalance = openingBalance + stats.income - stats.expense;
 
-    console.log('📊 RENDER STATS:');
-    console.log('  - Saldo awal bulan ini:', openingBalance);
-    console.log('  - Pemasukan bulan ini:', stats.income);
-    console.log('  - Pengeluaran bulan ini:', stats.expense);
-    console.log('  - Total saldo:', totalBalance);
+    // 🔥 SALDO BULAN LALU - BISA NEGATIF
+    var vOpening = document.getElementById('vOpening');
+    if (openingBalance < 0) {
+        vOpening.textContent = '- Rp ' + Math.abs(openingBalance).toLocaleString('id-ID');
+        vOpening.style.color = 'var(--expense)';
+    } else {
+        vOpening.textContent = 'Rp ' + openingBalance.toLocaleString('id-ID');
+        vOpening.style.color = 'var(--opening)';
+    }
 
-    document.getElementById('vOpening').textContent = fmtRp(openingBalance);
+    // 🔥 PEMASUKAN
     document.getElementById('vIncome').textContent = fmtRp(stats.income);
-    document.getElementById('vExpense').textContent = fmtRp(stats.expense);
-    var bEl = document.getElementById('vBalance');
-    bEl.style.color = totalBalance >= 0 ? 'var(--accent)' : 'var(--expense)';
-    bEl.textContent = (totalBalance < 0 ? '- ' : '') + fmtRp(Math.abs(totalBalance));
+    document.getElementById('vIncome').style.color = 'var(--income)';
 
-    var ratio = stats.income > 0 ? Math.min(stats.expense/stats.income*100, 100) : 0;
+    // 🔥 PENGELUARAN
+    document.getElementById('vExpense').textContent = fmtRp(stats.expense);
+    document.getElementById('vExpense').style.color = 'var(--expense)';
+
+    // 🔥 SALDO - BISA NEGATIF
+    var vBalance = document.getElementById('vBalance');
+    if (totalBalance < 0) {
+        vBalance.textContent = '- Rp ' + Math.abs(totalBalance).toLocaleString('id-ID');
+        vBalance.style.color = 'var(--expense)';
+    } else {
+        vBalance.textContent = 'Rp ' + totalBalance.toLocaleString('id-ID');
+        vBalance.style.color = 'var(--accent)';
+    }
+
+    var ratio = stats.income > 0 ? Math.min(stats.expense / stats.income * 100, 100) : 0;
     var rBar = document.getElementById('vRatioBar');
-    rBar.style.width = ratio+'%';
-    rBar.style.background = ratio>80?'var(--expense)':ratio>50?'linear-gradient(90deg,var(--accent),#ffa94d)':'var(--accent)';
+    rBar.style.width = ratio + '%';
+    rBar.style.background = ratio > 80 ? 'var(--expense)' : ratio > 50 ? 'linear-gradient(90deg,var(--accent),#ffa94d)' : 'var(--accent)';
     var rLbl = document.getElementById('vRatio');
-    rLbl.textContent = ratio.toFixed(1)+'%';
-    rLbl.style.color = ratio>80?'var(--expense)':ratio>50?'var(--warning)':'var(--accent)';
+    rLbl.textContent = ratio.toFixed(1) + '%';
+    rLbl.style.color = ratio > 80 ? 'var(--expense)' : ratio > 50 ? 'var(--warning)' : 'var(--accent)';
 
     renderHealthScore(stats, ratio, totalBalance);
 }
@@ -1776,24 +1793,68 @@ function renderDashboard(){
   var st=getMonthStats(getMonthTxs()), opening=getCurrentMonthOpeningBalance();
   var totalBalance = opening + st.income - st.expense;
   var rate = (opening + st.income) > 0 ? ((opening + st.income - st.expense)/(opening + st.income)*100) : 0;
-  var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
-  set('dashOpening',fmtRp(opening));
-  set('dashIncome',fmtRp(st.income));
-  set('dashExpense',fmtRp(st.expense));
-  set('dashBalance',fmtRp(totalBalance));
-  set('dashSaving',rate.toFixed(1)+'%');
   
-  var balEl = document.getElementById('dashBalance');
-  if (balEl) {
-    balEl.style.color = totalBalance >= 0 ? 'var(--accent)' : 'var(--expense)';
+  // 🔥 SALDO BULAN LALU - BISA NEGATIF
+  var dashOpening = document.getElementById('dashOpening');
+  if (opening < 0) {
+      dashOpening.textContent = '- Rp ' + Math.abs(opening).toLocaleString('id-ID');
+      dashOpening.style.color = 'var(--expense)';
+  } else {
+      dashOpening.textContent = 'Rp ' + opening.toLocaleString('id-ID');
+      dashOpening.style.color = 'var(--opening)';
   }
+
+  // 🔥 SALDO - BISA NEGATIF
+  var dashBalance = document.getElementById('dashBalance');
+  if (totalBalance < 0) {
+      dashBalance.textContent = '- Rp ' + Math.abs(totalBalance).toLocaleString('id-ID');
+      dashBalance.style.color = 'var(--expense)';
+  } else {
+      dashBalance.textContent = 'Rp ' + totalBalance.toLocaleString('id-ID');
+      dashBalance.style.color = 'var(--accent)';
+  }
+
+  document.getElementById('dashIncome').textContent = fmtRp(st.income);
+  document.getElementById('dashIncome').style.color = 'var(--income)';
   
-  set('dashboardSubtitle',(isPublisher?'Publisher dashboard — melihat '+(selectedOwnerUid !== currentUser.uid ? 'user '+selectedOwnerUid : 'dirinya sendiri'):'Ringkasan keuangan pribadi')+' · '+BULAN[curMonth.getMonth()]+' '+curMonth.getFullYear());
-  var target=0, pct=0; document.getElementById('dashboardBudgetSummary').innerHTML='<div class="metric-row"><span class="metric-name">Target tabungan</span><span class="metric-value">'+fmtRp(target)+'</span></div><div class="metric-row"><span class="metric-name">Progress target</span><span class="metric-value">'+pct.toFixed(0)+'%</span></div><div class="mini-bar"><span style="width:'+pct+'%"></span></div><div class="metric-row"><span class="metric-name">Skor kesehatan</span><span class="metric-value">'+(document.getElementById('healthScore').textContent||'--')+'</span></div>';
-  document.getElementById('dashboardMenuSummary').innerHTML='<div class="metric-row"><span class="metric-name">Transaksi</span><span class="metric-value">'+getMonthTxs().length+'</span></div><div class="metric-row"><span class="metric-name">Budget & Target</span><span class="metric-value">Aktif</span></div><div class="metric-row"><span class="metric-name">Analytics</span><span class="metric-value">6 bulan</span></div><div class="metric-row"><span class="metric-name">Calendar</span><span class="metric-value">Tabel bulanan</span></div><div class="metric-row"><span class="metric-name">More</span><span class="metric-value">Accounts · Export · Safety</span></div>';
-  var recent=getMonthTxs().slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).slice(0,5);
-  document.getElementById('dashboardRecent').innerHTML=recent.length?recent.map(function(t){var c=catLookup[t.category]||{l:t.category};return '<div class="metric-row"><span class="metric-name">'+t.date+' · '+c.l+'</span><span class="metric-value" style="color:'+(t.type==='income'?'var(--income)':'var(--expense)')+'">'+(t.type==='income'?'+':'-')+fmtRp(t.amount)+'</span></div>';}).join(''):'<div class="section-sub">Belum ada transaksi bulan ini.</div>';
-  var ac=getAccounts();document.getElementById('dashboardAccounts').innerHTML=ac.map(function(a){var bal=0;allTxs.forEach(function(t){if((t.account||'bank')===a.id)bal+=(t.type==='income'?t.amount:-t.amount);});return '<div class="metric-row"><span class="metric-name">'+a.name+'</span><span class="metric-value">'+fmtRp(bal)+'</span></div>';}).join('');
+  document.getElementById('dashExpense').textContent = fmtRp(st.expense);
+  document.getElementById('dashExpense').style.color = 'var(--expense)';
+  
+  document.getElementById('dashSaving').textContent = rate.toFixed(1) + '%';
+  document.getElementById('dashSaving').style.color = '#ffb347';
+  
+  document.getElementById('dashboardSubtitle') && (document.getElementById('dashboardSubtitle').textContent = 
+    (isPublisher ? 'Publisher dashboard — melihat ' + (selectedOwnerUid !== currentUser.uid ? 'user ' + selectedOwnerUid : 'dirinya sendiri') : 'Ringkasan keuangan pribadi') + 
+    ' · ' + BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear());
+
+  var target=0, pct=0; 
+  document.getElementById('dashboardBudgetSummary').innerHTML = 
+    '<div class="metric-row"><span class="metric-name">Target tabungan</span><span class="metric-value">' + fmtRp(target) + '</span></div>' +
+    '<div class="metric-row"><span class="metric-name">Progress target</span><span class="metric-value">' + pct.toFixed(0) + '%</span></div>' +
+    '<div class="mini-bar"><span style="width:' + pct + '%"></span></div>' +
+    '<div class="metric-row"><span class="metric-name">Skor kesehatan</span><span class="metric-value">' + (document.getElementById('healthScore').textContent || '--') + '</span></div>';
+  
+  document.getElementById('dashboardMenuSummary').innerHTML = 
+    '<div class="metric-row"><span class="metric-name">Transaksi</span><span class="metric-value">' + getMonthTxs().length + '</span></div>' +
+    '<div class="metric-row"><span class="metric-name">Budget & Target</span><span class="metric-value">Aktif</span></div>' +
+    '<div class="metric-row"><span class="metric-name">Analytics</span><span class="metric-value">6 bulan</span></div>' +
+    '<div class="metric-row"><span class="metric-name">Calendar</span><span class="metric-value">Tabel bulanan</span></div>' +
+    '<div class="metric-row"><span class="metric-name">More</span><span class="metric-value">Accounts · Export · Safety</span></div>';
+  
+  var recent = getMonthTxs().slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); }).slice(0, 5);
+  document.getElementById('dashboardRecent').innerHTML = recent.length ? 
+    recent.map(function(t){ 
+      var c = catLookup[t.category] || {l:t.category}; 
+      return '<div class="metric-row"><span class="metric-name">' + t.date + ' · ' + c.l + '</span><span class="metric-value" style="color:' + (t.type === 'income' ? 'var(--income)' : 'var(--expense)') + '">' + (t.type === 'income' ? '+' : '-') + fmtRp(t.amount) + '</span></div>';
+    }).join('') : 
+    '<div class="section-sub">Belum ada transaksi bulan ini.</div>';
+  
+  var ac = getAccounts();
+  document.getElementById('dashboardAccounts').innerHTML = ac.map(function(a){
+    var bal = 0;
+    allTxs.forEach(function(t){ if ((t.account || 'bank') === a.id) bal += (t.type === 'income' ? t.amount : -t.amount); });
+    return '<div class="metric-row"><span class="metric-name">' + a.name + '</span><span class="metric-value">' + fmtRp(bal) + '</span></div>';
+  }).join('');
 }
 
 /* ===================== EVENT LISTENERS ===================== */
