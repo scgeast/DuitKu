@@ -242,6 +242,15 @@
         .user-management-list{display:grid;gap:8px}.user-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--border);background:var(--bg-raised);border-radius:11px}.user-row-main{min-width:0}.user-row-title{font-size:12px;font-weight:800;color:var(--fg)}.user-row-sub{font-size:10px;color:var(--fg-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis}.role-pill{font-size:9px;font-weight:800;padding:4px 7px;border-radius:99px;background:var(--accent-glow);color:var(--accent)}
         @media(max-width:900px){.dash-grid{grid-template-columns:1fr 1fr}.publisher-switcher select{max-width:120px}}
         @media(max-width:560px){.dash-grid{grid-template-columns:1fr}.auth-box{padding:24px 18px}.publisher-switcher{width:100%;justify-content:space-between}}
+        
+        /* Budget & Target period indicator */
+        .budget-period-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 12px;background:var(--accent-glow);border-radius:8px;border-left:3px solid var(--accent)}
+        .budget-period-header .period-label{font-size:11px;color:var(--fg)}
+        .budget-period-header .period-date{font-size:11px;color:var(--fg-dim)}
+        .budget-summary-row{display:flex;justify-content:space-between;margin-bottom:16px;padding:8px 12px;background:var(--bg-raised);border-radius:8px;flex-wrap:wrap;gap:8px}
+        .budget-summary-row span{font-size:11px;color:var(--fg-muted)}
+        .budget-summary-row strong{font-weight:700}
+        .target-period-info{display:flex;justify-content:space-between;font-size:10px;color:var(--fg-muted);margin-bottom:6px}
     </style>
 </head>
 <body>
@@ -389,12 +398,12 @@
         <div class="card dash-card" style="border-left:3px solid var(--income)">
           <div class="dash-label"><i class="fa-solid fa-arrow-trend-down" style="color:var(--income);font-size:10px"></i> Pemasukan</div>
           <div class="dash-value" id="dashIncome" style="color:var(--income)">Rp 0</div>
-          <div class="dash-mini">Bulan aktif</div>
+          <div class="dash-mini">Periode aktif</div>
         </div>
         <div class="card dash-card" style="border-left:3px solid var(--expense)">
           <div class="dash-label"><i class="fa-solid fa-arrow-trend-up" style="color:var(--expense);font-size:10px"></i> Pengeluaran</div>
           <div class="dash-value" id="dashExpense" style="color:var(--expense)">Rp 0</div>
-          <div class="dash-mini">Bulan aktif</div>
+          <div class="dash-mini">Periode aktif</div>
         </div>
         <div class="card dash-card" style="border-left:3px solid var(--accent)">
           <div class="dash-label"><i class="fa-solid fa-wallet" style="color:var(--accent);font-size:10px"></i> Saldo</div>
@@ -420,7 +429,7 @@
     <!-- Overview panel -->
     <section class="panel" id="panel-overview">
         <div class="section-head">
-            <div><div class="section-kicker">Keuangan</div><div class="section-title">Overview</div><div class="section-sub" id="overviewSub">Ringkasan keuangan bulan ini</div></div>
+            <div><div class="section-kicker">Keuangan</div><div class="section-title">Overview</div><div class="section-sub" id="overviewSub">Ringkasan keuangan periode ini</div></div>
         </div>
         <!-- Skeleton -->
         <div id="skeletonLoader">
@@ -453,7 +462,7 @@
                         <span class="stat-label">Pemasukan</span>
                     </div>
                     <div class="stat-num" id="vIncome" style="color:var(--income)">Rp 0</div>
-                    <div class="stat-sub">Bulan aktif</div>
+                    <div class="stat-sub">Periode aktif</div>
                 </div>
                 <div class="card stat-card s-expense card-hover">
                     <div class="bar"></div><i class="fa-solid fa-arrow-trend-up stat-bg-icon"></i>
@@ -462,7 +471,7 @@
                         <span class="stat-label">Pengeluaran</span>
                     </div>
                     <div class="stat-num" id="vExpense" style="color:var(--expense)">Rp 0</div>
-                    <div class="stat-sub">Bulan aktif</div>
+                    <div class="stat-sub">Periode aktif</div>
                 </div>
                 <div class="card stat-card s-balance card-hover">
                     <div class="bar"></div><i class="fa-solid fa-wallet stat-bg-icon"></i>
@@ -500,8 +509,8 @@
             </div>
 
             <div class="insight-grid">
-                <div class="card insight-card card-hover"><div class="ic"><i class="fa-solid fa-lightbulb"></i></div><strong id="insight1Title">Insight bulan ini</strong><p id="insight1">Menganalisis pola pemasukan dan pengeluaran...</p></div>
-                <div class="card insight-card card-hover"><div class="ic"><i class="fa-solid fa-piggy-bank"></i></div><strong id="insight2Title">Saving rate</strong><p id="insight2">Target tabungan akan dihitung dari data bulan berjalan.</p></div>
+                <div class="card insight-card card-hover"><div class="ic"><i class="fa-solid fa-lightbulb"></i></div><strong id="insight1Title">Insight periode ini</strong><p id="insight1">Menganalisis pola pemasukan dan pengeluaran...</p></div>
+                <div class="card insight-card card-hover"><div class="ic"><i class="fa-solid fa-piggy-bank"></i></div><strong id="insight2Title">Saving rate</strong><p id="insight2">Target tabungan akan dihitung dari data periode berjalan.</p></div>
                 <div class="card insight-card card-hover"><div class="ic"><i class="fa-solid fa-triangle-exclamation"></i></div><strong id="insight3Title">Perhatian</strong><p id="insight3">Belum ada peringatan keuangan.</p></div>
             </div>
 
@@ -542,7 +551,7 @@
 
     <!-- Transactions panel -->
     <section class="panel" id="panel-transactions">
-        <div class="section-head"><div><div class="section-kicker">Money movement</div><div class="section-title">Transaksi</div><div class="section-sub">Kelola dan telusuri seluruh transaksi pada bulan aktif.</div></div><button class="btn-secondary" onclick="document.getElementById('btnAdd').click()"><i class="fa-solid fa-plus"></i> Tambah</button></div>
+        <div class="section-head"><div><div class="section-kicker">Money movement</div><div class="section-title">Transaksi</div><div class="section-sub">Kelola dan telusuri seluruh transaksi pada periode aktif.</div></div><button class="btn-secondary" onclick="document.getElementById('btnAdd').click()"><i class="fa-solid fa-plus"></i> Tambah</button></div>
         <div id="transactionMount" class="card"></div>
     </section>
 
@@ -561,10 +570,10 @@
 
     <!-- Budget panel -->
     <section class="panel" id="panel-budget">
-        <div class="section-head"><div><div class="section-kicker">Plan your money</div><div class="section-title">Budget & Target</div><div class="section-sub">Pantau batas pengeluaran dan target tabungan.</div></div><button class="btn-secondary" id="btnResetBudget"><i class="fa-solid fa-rotate-left"></i> Reset</button></div>
+        <div class="section-head"><div><div class="section-kicker">Plan your money</div><div class="section-title">Budget & Target</div><div class="section-sub">Pantau batas pengeluaran dan target tabungan sesuai periode gajian.</div></div><button class="btn-secondary" id="btnResetBudget"><i class="fa-solid fa-rotate-left"></i> Reset</button></div>
         <div class="budget-grid">
             <div class="card budget-card"><h4 style="font-size:14px;margin-bottom:4px;color:var(--fg)">Budget kategori</h4><p style="font-size:11px;color:var(--fg-muted);margin-bottom:4px">Atur budget sederhana per kategori.</p><div id="budgetList"></div></div>
-            <div class="card budget-card"><h4 style="font-size:14px;margin-bottom:4px;color:var(--fg)">Target tabungan</h4><p style="font-size:11px;color:var(--fg-muted);margin-bottom:12px">Progress dihitung dari saldo bulan aktif.</p><div id="targetSummary"></div></div>
+            <div class="card budget-card"><h4 style="font-size:14px;margin-bottom:4px;color:var(--fg)">Target tabungan</h4><p style="font-size:11px;color:var(--fg-muted);margin-bottom:12px">Progress dihitung dari saldo periode aktif.</p><div id="targetSummary"></div></div>
         </div>
     </section>
 
@@ -575,9 +584,9 @@
             <div class="card more-card publisher-only" data-more-view="users"><i class="fa-solid fa-users more-icon"></i><span class="more-arrow">›</span><h4>Users</h4><p>Tambah pengguna, lihat User ID dan status perubahan password.</p><button class="btn-secondary more-open" data-view="users">Kelola User</button></div>
             <div class="card more-card" data-more-view="accounts"><i class="fa-solid fa-wallet more-icon"></i><span class="more-arrow">›</span><h4>Accounts</h4><p>Kelola dompet dan rekening, lalu lihat total saldo masing-masing akun.</p><button class="btn-secondary more-open" data-view="accounts">Buka</button></div>
             <div class="card more-card" data-more-view="calendar"><i class="fa-solid fa-calendar-days more-icon"></i><span class="more-arrow">›</span><h4>Calendar</h4><p>Visualisasikan aktivitas pemasukan dan pengeluaran berdasarkan tanggal.</p><button class="btn-secondary more-open" data-view="calendar">Buka</button></div>
-            <div class="card more-card"><i class="fa-solid fa-file-export more-icon"></i><h4>Export Data</h4><p>Backup transaksi bulan aktif dengan cepat dalam format CSV.</p><button class="btn-secondary" onclick="document.getElementById('btnExport').click()">Export CSV</button></div>
+            <div class="card more-card"><i class="fa-solid fa-file-export more-icon"></i><h4>Export Data</h4><p>Backup transaksi periode aktif dengan cepat dalam format CSV.</p><button class="btn-secondary" onclick="document.getElementById('btnExport').click()">Export CSV</button></div>
             <div class="card more-card" data-more-view="recurring"><i class="fa-solid fa-repeat more-icon"></i><span class="more-arrow">›</span><h4>Recurring</h4><p>Simpan daftar transaksi rutin seperti gaji, kos, listrik dan langganan.</p><button class="btn-secondary more-open" data-view="recurring">Kelola</button></div>
-            <div class="card more-card publisher-only" data-more-view="safety"><i class="fa-solid fa-shield-halved more-icon"></i><span class="more-arrow">›</span><h4>Data Safety</h4><p>Backup dan restore data lokal agar data tetap aman saat offline.</p><button class="btn-secondary more-open" data-view="safety">Kelola</button></div>
+            <div class="card more-card publisher-only" data-more-view="safety"><i class="fa-solid fa-shield-halved more-icon"></i><span class="more-arrow">›</span><h4>Data Safety</h4><p>Backup dan restore data lokal agar data tetap amat saat offline.</p><button class="btn-secondary more-open" data-view="safety">Kelola</button></div>
             <div class="card more-card" data-more-view="settings"><i class="fa-solid fa-sliders more-icon"></i><span class="more-arrow">›</span><h4>Settings</h4><p>Atur tampilan, mata uang, animasi dan preferensi aplikasi.</p><button class="btn-secondary more-open" data-view="settings">Pengaturan</button></div>
         </div>
         <div class="card more-workspace" id="moreWorkspace" style="display:none"></div>
@@ -658,7 +667,7 @@ var isPublisher = false;
 var calStartDate = null;
 var calEndDate = null;
 
-/* ===================== SALDO AWAL BULAN - FIXED ===================== */
+/* ===================== SALDO AWAL BULAN ===================== */
 
 function getOpeningBalanceKey() {
     return 'opening_balance_' + (selectedOwnerUid || 'default');
@@ -730,9 +739,125 @@ function getCurrentMonthOpeningBalance() {
     return prevBalance;
 }
 
+/* ===================== PERIODE GAJIAN (28-28) ===================== */
+
+// Fungsi untuk mendapatkan periode gajian saat ini (28-28 bulan berikutnya)
+function getCurrentPaydayPeriod() {
+    var paydayDate = parseInt(localStorage.getItem('duitku_payday_date') || '28', 10);
+    var now = new Date();
+    var currentDay = now.getDate();
+    var currentMonth = now.getMonth();
+    var currentYear = now.getFullYear();
+    
+    var periodStart, periodEnd;
+    if (currentDay >= paydayDate) {
+        // Periode: tanggal payday bulan ini sampai payday-1 bulan depan
+        periodStart = new Date(currentYear, currentMonth, paydayDate);
+        periodEnd = new Date(currentYear, currentMonth + 1, paydayDate - 1);
+        periodEnd.setHours(23, 59, 59, 999);
+    } else {
+        // Periode: tanggal payday bulan lalu sampai payday-1 bulan ini
+        var prevMonth = currentMonth - 1;
+        var prevYear = currentYear;
+        if (prevMonth < 0) {
+            prevMonth = 11;
+            prevYear = currentYear - 1;
+        }
+        periodStart = new Date(prevYear, prevMonth, paydayDate);
+        periodEnd = new Date(prevYear, prevMonth + 1, paydayDate - 1);
+        periodEnd.setHours(23, 59, 59, 999);
+    }
+    
+    return {
+        start: periodStart,
+        end: periodEnd,
+        startDate: periodStart.toISOString().split('T')[0],
+        endDate: periodEnd.toISOString().split('T')[0],
+        label: formatPaydayPeriodLabel(periodStart, periodEnd)
+    };
+}
+
+// Format label periode gajian
+function formatPaydayPeriodLabel(start, end) {
+    var startMonth = BULAN[start.getMonth()];
+    var startYear = start.getFullYear();
+    var endMonth = BULAN[end.getMonth()];
+    var endYear = end.getFullYear();
+    var paydayDate = parseInt(localStorage.getItem('duitku_payday_date') || '28', 10);
+    
+    if (startYear === endYear && start.getMonth() === end.getMonth()) {
+        return startMonth + ' ' + startYear + ' (siklus ' + paydayDate + ')';
+    }
+    return startMonth + ' ' + startYear + ' - ' + endMonth + ' ' + endYear + ' (siklus ' + paydayDate + ')';
+}
+
+// Fungsi untuk mendapatkan transaksi berdasarkan periode gajian (28-28)
+function getTxsByPaydayPeriod() {
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    if (paydaySetting === '0') {
+        return getMonthTxsCalendar();
+    }
+    
+    var period = getCurrentPaydayPeriod();
+    return allTxs.filter(function(t) {
+        var d = new Date(t.date);
+        return d >= period.start && d <= period.end;
+    });
+}
+
+// Fungsi untuk mendapatkan periode gajian berdasarkan bulan tertentu
+function getPaydayPeriodForMonth(year, month) {
+    var paydayDate = parseInt(localStorage.getItem('duitku_payday_date') || '28', 10);
+    var periodStart = new Date(year, month, paydayDate);
+    var periodEnd = new Date(year, month + 1, paydayDate - 1);
+    periodEnd.setHours(23, 59, 59, 999);
+    
+    return {
+        start: periodStart,
+        end: periodEnd,
+        startDate: periodStart.toISOString().split('T')[0],
+        endDate: periodEnd.toISOString().split('T')[0]
+    };
+}
+
+// Fungsi untuk mendapatkan transaksi berdasarkan periode gajian tertentu
+function getTxsByPaydayPeriodForMonth(year, month) {
+    var period = getPaydayPeriodForMonth(year, month);
+    return allTxs.filter(function(t) {
+        var d = new Date(t.date);
+        return d >= period.start && d <= period.end;
+    });
+}
+
+// Fungsi getMonthTxs asli untuk bulan kalender
+function getMonthTxsCalendar(year, month) {
+    var y = year !== undefined ? year : curMonth.getFullYear();
+    var m = month !== undefined ? month : curMonth.getMonth();
+    return allTxs.filter(function(t){ 
+        var d = new Date(t.date); 
+        return d.getFullYear()===y && d.getMonth()===m; 
+    });
+}
+
+// Override getMonthTxs untuk mendukung periode gajian
+var _originalGetMonthTxs = getMonthTxs;
+getMonthTxs = function(year, month) {
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    if (paydaySetting === '0') {
+        return getMonthTxsCalendar(year, month);
+    }
+    
+    // Jika parameter tahun/bulan diberikan
+    if (year !== undefined && month !== undefined) {
+        return getTxsByPaydayPeriodForMonth(year, month);
+    }
+    
+    // Gunakan periode gajian saat ini
+    return getTxsByPaydayPeriod();
+};
+
 /* ===================== HELPERS ===================== */
 
-// 🔥 FORMAT RUPIAH DENGAN TANDA MINUS
 function fmtRp(n) {
     if (n === undefined || n === null) return 'Rp 0';
     if (n < 0) {
@@ -741,7 +866,6 @@ function fmtRp(n) {
     return 'Rp ' + n.toLocaleString('id-ID');
 }
 
-// 🔥 SET VALUE DENGAN WARMA (untuk saldo negatif)
 function setValueWithColor(element, value, colorPositive, colorNegative) {
     if (!element) return;
     if (value < 0) {
@@ -785,6 +909,12 @@ function setSyncStatus(status, msg) {
     var label = document.getElementById('syncLabel');
     dot.className = 'sync-dot ' + status;
     label.textContent = msg || (status==='online'?'Real-time':status==='offline'?'Mode Lokal':'Menghubungkan...');
+}
+
+function getMonthStats(txs) {
+    var inc=0, exp=0;
+    txs.forEach(function(t){ if(t.type==='income') inc+=t.amount; else exp+=t.amount; });
+    return { income:inc, expense:exp, balance:inc-exp };
 }
 
 /* ===================== CLEANUP DATA SAAT LOGOUT ===================== */
@@ -992,22 +1122,14 @@ function renderAll() {
 }
 
 function renderMonthLabel() {
-    document.getElementById('lblMonth').textContent = BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear();
-}
-
-function getMonthTxs(year, month) {
-    var y = year !== undefined ? year : curMonth.getFullYear();
-    var m = month !== undefined ? month : curMonth.getMonth();
-    return allTxs.filter(function(t){ 
-        var d = new Date(t.date); 
-        return d.getFullYear()===y && d.getMonth()===m; 
-    });
-}
-
-function getMonthStats(txs) {
-    var inc=0, exp=0;
-    txs.forEach(function(t){ if(t.type==='income') inc+=t.amount; else exp+=t.amount; });
-    return { income:inc, expense:exp, balance:inc-exp };
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    if (paydaySetting === '0') {
+        document.getElementById('lblMonth').textContent = BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear();
+        return;
+    }
+    
+    var period = getCurrentPaydayPeriod();
+    document.getElementById('lblMonth').textContent = period.label;
 }
 
 function renderStats() {
@@ -1017,7 +1139,6 @@ function renderStats() {
     var openingBalance = getCurrentMonthOpeningBalance();
     var totalBalance = openingBalance + stats.income - stats.expense;
 
-    // 🔥 SALDO BULAN LALU - BISA NEGATIF
     var vOpening = document.getElementById('vOpening');
     if (openingBalance < 0) {
         vOpening.textContent = '- Rp ' + Math.abs(openingBalance).toLocaleString('id-ID');
@@ -1027,15 +1148,12 @@ function renderStats() {
         vOpening.style.color = 'var(--opening)';
     }
 
-    // 🔥 PEMASUKAN
     document.getElementById('vIncome').textContent = fmtRp(stats.income);
     document.getElementById('vIncome').style.color = 'var(--income)';
 
-    // 🔥 PENGELUARAN
     document.getElementById('vExpense').textContent = fmtRp(stats.expense);
     document.getElementById('vExpense').style.color = 'var(--expense)';
 
-    // 🔥 SALDO - BISA NEGATIF
     var vBalance = document.getElementById('vBalance');
     if (totalBalance < 0) {
         vBalance.textContent = '- Rp ' + Math.abs(totalBalance).toLocaleString('id-ID');
@@ -1074,7 +1192,7 @@ function renderHealthScore(stats, ratio, totalBalance) {
     } else {
         score=15; label='Kritis'; desc='Pengeluaran melebihi pemasukan. Segera ambil tindakan penghematan.'; color='var(--expense)';
     }
-    if (totalBalance < 0) { score=Math.min(score,10); label='Defisit'; desc='Pengeluaran melebihi pemasukan bulan ini.'; color='var(--expense)'; }
+    if (totalBalance < 0) { score=Math.min(score,10); label='Defisit'; desc='Pengeluaran melebihi pemasukan periode ini.'; color='var(--expense)'; }
 
     var circ = 2 * Math.PI * 22;
     document.getElementById('healthCircle').style.stroke = color;
@@ -1185,13 +1303,21 @@ function updateInsights(){
     var totalBalance = opening + st.income - st.expense;
     var rate = (opening + st.income) > 0 ? ((opening + st.income - st.expense)/(opening + st.income)*100) : 0;
     
+    // Tambahkan info periode gajian
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var periodInfo = '';
+    if (paydaySetting === '1') {
+        var period = getCurrentPaydayPeriod();
+        periodInfo = '📅 Periode gajian: ' + period.label + '. ';
+    }
+    
     var ex=txs.filter(function(t){return t.type==='expense';}), map={}; ex.forEach(function(t){map[t.category]=(map[t.category]||0)+t.amount;});
     var keys=Object.keys(map).sort(function(a,b){return map[b]-map[a];}), top=keys[0], topAmt=top?map[top]:0;
     var topLabel=top?(catLookup[top]||{l:top}).l:'-';
-    document.getElementById('insight1').textContent=top?topLabel+' menjadi pengeluaran terbesar: '+fmtRp(topAmt)+'.':'Belum cukup data untuk membuat insight.';
-    document.getElementById('insight2').textContent=(opening + st.income)>0?('Saving rate bulan ini '+rate.toFixed(1)+'%. '+(rate>=20?'Pertahankan ritme tabunganmu.':'Coba sisihkan minimal 20% pemasukan.')):'Tambahkan pemasukan untuk menghitung saving rate.';
+    document.getElementById('insight1').textContent=periodInfo + (top?topLabel+' menjadi pengeluaran terbesar: '+fmtRp(topAmt)+'.':'Belum cukup data untuk membuat insight.');
+    document.getElementById('insight2').textContent=(opening + st.income)>0?('Saving rate periode ini '+rate.toFixed(1)+'%. '+(rate>=20?'Pertahankan ritme tabunganmu.':'Coba sisihkan minimal 20% pemasukan.')):'Tambahkan pemasukan untuk menghitung saving rate.';
     var ratio=st.income>0?st.expense/st.income*100:0;
-    document.getElementById('insight3').textContent=ratio>80?'Pengeluaran sudah melewati 80% pemasukan. Saatnya rem pengeluaran non-esensial.':ratio>50?'Rasio pengeluaran berada di atas 50%. Pantau kategori terbesar.':'Kondisi pengeluaran masih relatif terkendali bulan ini.';
+    document.getElementById('insight3').textContent=ratio>80?'Pengeluaran sudah melewati 80% pemasukan. Saatnya rem pengeluaran non-esensial.':ratio>50?'Rasio pengeluaran berada di atas 50%. Pantau kategori terbesar.':'Kondisi pengeluaran masih relatif terkendali periode ini.';
 }
 
 /* ===================== EXPORT CSV ===================== */
@@ -1397,7 +1523,7 @@ function renderAnalytics(){
     document.getElementById('spendingHabits').innerHTML=dayKeys.length?'<div class="metric-row"><span class="metric-name">Hari paling boros</span><span class="metric-value">Tanggal '+dayKeys[0]+'</span></div><div class="metric-row"><span class="metric-name">Nilai terbesar dalam 1 hari</span><span class="metric-value">'+fmtRp(days[dayKeys[0]])+'</span></div><div class="metric-row"><span class="metric-name">Jumlah transaksi keluar</span><span class="metric-value">'+ex.length+'</span></div>':'<div class="section-sub">Belum ada data kebiasaan.</div>';
 }
 
-/* ==================== BUDGET ==================== */
+/* ==================== BUDGET & TARGET ==================== */
 var DEFAULT_BUDGET={makanan:2000000,jajan:750000,transportasi:1000000,belanja:1000000,belanja_online:1000000,tagihan:1500000,kesehatan:500000,hiburan:500000,pendidikan:500000};
 var DEFAULT_PUBLISHER_BUDGET={
     makanan:2000000,jajan:750000,transportasi:1000000,belanja:1000000,
@@ -1429,29 +1555,268 @@ function getBudgets(){
 }
 function saveBudgets(b){localStorage.setItem(budgetStorageKey(),JSON.stringify(b));}
 
+// Fungsi untuk menyimpan custom target
+function saveCustomTarget(value) {
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var period = getCurrentPaydayPeriod();
+    var key = 'duitku_target_' + (selectedOwnerUid || 'default') + '_' + 
+              (paydaySetting === '1' ? 'payday_' + period.startDate : 'calendar');
+    localStorage.setItem(key, String(value));
+}
+
+// Fungsi untuk mendapatkan custom target
+function getCustomTarget() {
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var period = getCurrentPaydayPeriod();
+    var key = 'duitku_target_' + (selectedOwnerUid || 'default') + '_' + 
+              (paydaySetting === '1' ? 'payday_' + period.startDate : 'calendar');
+    var val = localStorage.getItem(key);
+    return val ? parseInt(val, 10) : null;
+}
+
 function renderBudget(){
-    var b=getBudgets(), txs=getMonthTxs().filter(function(t){return t.type==='expense';}), used={};
-    txs.forEach(function(t){used[t.category]=(used[t.category]||0)+t.amount;});
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var paydayDate = parseInt(localStorage.getItem('duitku_payday_date') || '28', 10);
+    
+    var b = getBudgets();
+    var txs, periodLabel;
+    
+    if (paydaySetting === '1') {
+        var period = getCurrentPaydayPeriod();
+        txs = getTxsByPaydayPeriod();
+        periodLabel = period.label;
+    } else {
+        txs = getMonthTxsCalendar();
+        periodLabel = 'Bulan kalender';
+    }
+    
+    var expenseTxs = txs.filter(function(t){ return t.type === 'expense'; });
+    var used = {};
+    expenseTxs.forEach(function(t){ used[t.category] = (used[t.category] || 0) + t.amount; });
+    
+    var st = getMonthStats(txs);
+    var opening = getCurrentMonthOpeningBalance();
+    var totalBalance = opening + st.income - st.expense;
     
     var validKeys = getBudgetCategories();
     var html = '';
-    validKeys.forEach(function(k){
-        var u=used[k]||0, lim=b[k]||0, pct=lim?u/lim*100:0, cls=pct>=100?'danger':pct>=80?'warn':'';
-        var l=(catLookup[k]||{l:k}).l;
-        html += '<div class="budget-line"><div class="budget-top"><span><strong>'+l+'</strong></span><span>'+fmtRp(u)+' / '+fmtRp(lim)+'</span></div><div class="budget-track"><div class="budget-fill '+cls+'" style="width:'+Math.min(pct,100)+'%"></div></div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--fg-muted)"><span>'+pct.toFixed(0)+'% terpakai</span><button class="btn-secondary budget-edit" data-cat="'+k+'" style="padding:3px 7px">Edit</button></div></div>';
-    });
-    document.getElementById('budgetList').innerHTML = html;
     
-    var st=getMonthStats(getMonthTxs()), opening=getCurrentMonthOpeningBalance();
-    var target = (opening + st.income) > 0 ? Math.max(opening + st.income - st.expense, 0) : 0;
-    var goal = (opening + st.income) > 0 ? (opening + st.income) * 0.2 : 0;
-    var pct = goal ? Math.min(target/goal*100, 100) : 0;
-    document.getElementById('targetSummary').innerHTML='<div style="padding:18px 0"><div style="font-size:11px;color:var(--fg-muted)">Target tabungan bulan ini (20% dari total pemasukan + saldo awal)</div><div style="font:700 25px Space Grotesk;margin:5px 0;color:var(--fg)">'+fmtRp(goal)+'</div><div class="budget-track"><div class="budget-fill" style="width:'+pct+'%"></div></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px"><span>Saldo tersedia: <b style="color:var(--fg)">'+fmtRp(target)+'</b></span><b style="color:var(--accent)">'+pct.toFixed(0)+'%</b></div><button class="btn-secondary" id="targetEditBtn" style="margin-top:12px"><i class="fa-solid fa-pen"></i> Edit Target</button></div><div class="card" style="padding:12px;background:var(--bg-raised)"><div style="font-size:11px;color:var(--fg-dim)">💡 Target ini otomatis mengikuti total pemasukan + saldo awal bulan.</div></div>';
-    document.querySelectorAll('.budget-edit').forEach(function(btn){btn.onclick=function(){var k=this.getAttribute('data-cat'), cur=b[k], val=prompt('Budget '+((catLookup[k]||{l:k}).l)+' (Rp)',String(cur)); if(val!==null){var n=parseInt(String(val).replace(/\D/g,''),10); if(n>0){b[k]=n;saveBudgets(b);renderBudget();toast('Budget diperbarui','ok');}}};});
-    var te=document.getElementById('targetEditBtn');if(te)te.onclick=function(){var val=prompt('Target tabungan (Rp)',String(goal));if(val!==null){var n=parseInt(String(val).replace(/\D/g,''),10);if(n>0){goal=n;toast('Target diperbarui','ok');renderBudget();}}};
+    // Header periode
+    var periodInfo = '';
+    if (paydaySetting === '1') {
+        var period = getCurrentPaydayPeriod();
+        periodInfo = '<div class="budget-period-header">' +
+            '<span class="period-label"><i class="fa-regular fa-calendar"></i> <strong>Periode Gajian</strong></span>' +
+            '<span class="period-date">' + period.startDate + ' — ' + period.endDate + '</span>' +
+            '</div>';
+    } else {
+        periodInfo = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 12px;background:var(--bg-raised);border-radius:8px">' +
+            '<span style="font-size:11px;color:var(--fg-muted)"><i class="fa-regular fa-calendar"></i> Periode: <strong style="color:var(--fg)">' + periodLabel + '</strong></span>' +
+            '</div>';
+    }
+    html += periodInfo;
+    
+    // Ringkasan total
+    html += '<div class="budget-summary-row">' +
+        '<span>Total Pemasukan: <strong style="color:var(--income)">' + fmtRp(st.income) + '</strong></span>' +
+        '<span>Total Pengeluaran: <strong style="color:var(--expense)">' + fmtRp(st.expense) + '</strong></span>' +
+        '<span>Saldo Akhir: <strong style="color:' + (totalBalance >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + fmtRp(totalBalance) + '</strong></span>' +
+        '</div>';
+    
+    // Budget per kategori
+    validKeys.forEach(function(k){
+        var u = used[k] || 0;
+        var lim = b[k] || 0;
+        var pct = lim ? (u / lim * 100) : 0;
+        var cls = pct >= 100 ? 'danger' : pct >= 80 ? 'warn' : '';
+        var l = (catLookup[k] || {l: k}).l;
+        html += '<div class="budget-line">' +
+            '<div class="budget-top">' +
+            '<span><strong>' + l + '</strong></span>' +
+            '<span>' + fmtRp(u) + ' / ' + fmtRp(lim) + '</span>' +
+            '</div>' +
+            '<div class="budget-track">' +
+            '<div class="budget-fill ' + cls + '" style="width:' + Math.min(pct, 100) + '%"></div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--fg-muted)">' +
+            '<span>' + pct.toFixed(0) + '% terpakai</span>' +
+            '<button class="btn-secondary budget-edit" data-cat="' + k + '" style="padding:3px 7px">Edit</button>' +
+            '</div>' +
+            '</div>';
+    });
+    
+    // TARGET TABUNGAN
+    var targetBase = (opening + st.income);
+    var target = targetBase > 0 ? Math.max(targetBase - st.expense, 0) : 0;
+    var customGoal = getCustomTarget();
+    var goal = customGoal !== null ? customGoal : (targetBase > 0 ? targetBase * 0.2 : 0);
+    var pctTarget = goal ? Math.min(target / goal * 100, 100) : 0;
+    
+    // Info periode untuk target
+    var targetPeriodInfo = '';
+    if (paydaySetting === '1') {
+        var period = getCurrentPaydayPeriod();
+        targetPeriodInfo = '<div class="target-period-info">' +
+            '<span>Mulai: ' + period.startDate + '</span>' +
+            '<span>Sampai: ' + period.endDate + '</span>' +
+            '</div>';
+    }
+    
+    var summaryHtml = '<div style="padding:18px 0">' +
+        targetPeriodInfo +
+        '<div style="font-size:11px;color:var(--fg-muted)">Target tabungan (20% dari total pemasukan + saldo awal)</div>' +
+        '<div style="font:700 25px Space Grotesk;margin:5px 0;color:var(--fg)">' + fmtRp(goal) + '</div>' +
+        '<div class="budget-track">' +
+        '<div class="budget-fill" style="width:' + pctTarget + '%"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px">' +
+        '<span>Saldo tersedia: <b style="color:' + (target >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + fmtRp(target) + '</b></span>' +
+        '<b style="color:var(--accent)">' + pctTarget.toFixed(0) + '%</b>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--fg-muted)">' +
+        '<span>Pemasukan: ' + fmtRp(st.income) + '</span>' +
+        '<span>Pengeluaran: ' + fmtRp(st.expense) + '</span>' +
+        '<span>Saldo awal: ' + fmtRp(opening) + '</span>' +
+        '</div>' +
+        '<button class="btn-secondary" id="targetEditBtn" style="margin-top:12px"><i class="fa-solid fa-pen"></i> Edit Target</button>' +
+        '</div>' +
+        '<div class="card" style="padding:12px;background:var(--bg-raised)">' +
+        '<div style="font-size:11px;color:var(--fg-dim)">💡 Budget dan target mengikuti siklus gajian (tanggal ' + paydayDate + ' s/d ' + paydayDate + ' bulan berikutnya). Data tidak reset di awal bulan kalender.</div>' +
+        '</div>';
+    
+    document.getElementById('budgetList').innerHTML = html;
+    document.getElementById('targetSummary').innerHTML = summaryHtml;
+    
+    // Event listener untuk edit budget
+    document.querySelectorAll('.budget-edit').forEach(function(btn){
+        btn.onclick = function(){
+            var k = this.getAttribute('data-cat');
+            var cur = b[k];
+            var val = prompt('Budget ' + ((catLookup[k] || {l: k}).l) + ' (Rp)', String(cur));
+            if (val !== null) {
+                var n = parseInt(String(val).replace(/\D/g, ''), 10);
+                if (n > 0) {
+                    b[k] = n;
+                    saveBudgets(b);
+                    renderBudget();
+                    toast('Budget diperbarui', 'ok');
+                }
+            }
+        };
+    });
+    
+    // Event listener untuk edit target
+    var te = document.getElementById('targetEditBtn');
+    if (te) {
+        te.onclick = function(){
+            var currentGoal = getCustomTarget() || goal;
+            var val = prompt('Target tabungan untuk periode ini (Rp)', String(currentGoal));
+            if (val !== null) {
+                var n = parseInt(String(val).replace(/\D/g, ''), 10);
+                if (n > 0) {
+                    saveCustomTarget(n);
+                    toast('Target diperbarui', 'ok');
+                    renderBudget();
+                }
+            }
+        };
+    }
 }
-document.querySelectorAll('.nav-item[data-panel]').forEach(function(btn){btn.addEventListener('click',function(){activatePanel(this.getAttribute('data-panel'));});});
-document.getElementById('btnResetBudget').addEventListener('click',function(){localStorage.removeItem(budgetStorageKey());renderBudget();toast('Budget dikembalikan ke default','ok');});
+
+/* ===================== DASHBOARD ===================== */
+function renderDashboard(){
+    var st=getMonthStats(getMonthTxs()), opening=getCurrentMonthOpeningBalance();
+    var totalBalance = opening + st.income - st.expense;
+    var rate = (opening + st.income) > 0 ? ((opening + st.income - st.expense)/(opening + st.income)*100) : 0;
+    
+    var dashOpening = document.getElementById('dashOpening');
+    if (opening < 0) {
+        dashOpening.textContent = '- Rp ' + Math.abs(opening).toLocaleString('id-ID');
+        dashOpening.style.color = 'var(--expense)';
+    } else {
+        dashOpening.textContent = 'Rp ' + opening.toLocaleString('id-ID');
+        dashOpening.style.color = 'var(--opening)';
+    }
+
+    var dashBalance = document.getElementById('dashBalance');
+    if (totalBalance < 0) {
+        dashBalance.textContent = '- Rp ' + Math.abs(totalBalance).toLocaleString('id-ID');
+        dashBalance.style.color = 'var(--expense)';
+    } else {
+        dashBalance.textContent = 'Rp ' + totalBalance.toLocaleString('id-ID');
+        dashBalance.style.color = 'var(--accent)';
+    }
+
+    document.getElementById('dashIncome').textContent = fmtRp(st.income);
+    document.getElementById('dashIncome').style.color = 'var(--income)';
+    
+    document.getElementById('dashExpense').textContent = fmtRp(st.expense);
+    document.getElementById('dashExpense').style.color = 'var(--expense)';
+    
+    document.getElementById('dashSaving').textContent = rate.toFixed(1) + '%';
+    document.getElementById('dashSaving').style.color = '#ffb347';
+    
+    // Subtitle dengan info periode
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var subtitle = document.getElementById('dashboardSubtitle');
+    if (subtitle) {
+        var periodText = '';
+        if (paydaySetting === '1') {
+            var period = getCurrentPaydayPeriod();
+            periodText = '📅 Siklus gajian: ' + period.label;
+        } else {
+            periodText = '📅 Periode: ' + BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear();
+        }
+        subtitle.textContent = periodText + ' · ' + (isPublisher ? 'Publisher view' : 'Ringkasan keuangan pribadi');
+    }
+
+    // Budget summary di dashboard
+    var targetBase = opening + st.income;
+    var customGoal = getCustomTarget();
+    var goal = customGoal !== null ? customGoal : (targetBase > 0 ? targetBase * 0.2 : 0);
+    var target = targetBase > 0 ? Math.max(targetBase - st.expense, 0) : 0;
+    var pct = goal ? Math.min(target / goal * 100, 100) : 0;
+    
+    var summaryEl = document.getElementById('dashboardBudgetSummary');
+    if (summaryEl) {
+        var periodLabel = '';
+        if (paydaySetting === '1') {
+            var period = getCurrentPaydayPeriod();
+            periodLabel = period.label;
+        } else {
+            periodLabel = 'Bulan kalender';
+        }
+        summaryEl.innerHTML = 
+            '<div class="metric-row"><span class="metric-name">Periode</span><span class="metric-value" style="font-size:10px;color:var(--fg-muted)">' + periodLabel + '</span></div>' +
+            '<div class="metric-row"><span class="metric-name">Target tabungan</span><span class="metric-value">' + fmtRp(goal) + '</span></div>' +
+            '<div class="metric-row"><span class="metric-name">Progress target</span><span class="metric-value">' + pct.toFixed(0) + '%</span></div>' +
+            '<div class="mini-bar"><span style="width:' + pct + '%"></span></div>' +
+            '<div class="metric-row"><span class="metric-name">Saldo tersedia</span><span class="metric-value" style="color:' + (target >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + fmtRp(target) + '</span></div>' +
+            '<div class="metric-row"><span class="metric-name">Skor kesehatan</span><span class="metric-value">' + (document.getElementById('healthScore').textContent || '--') + '</span></div>';
+    }
+    
+    document.getElementById('dashboardMenuSummary').innerHTML = 
+        '<div class="metric-row"><span class="metric-name">Transaksi</span><span class="metric-value">' + getMonthTxs().length + '</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Budget & Target</span><span class="metric-value">Aktif</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Analytics</span><span class="metric-value">6 bulan</span></div>' +
+        '<div class="metric-row"><span class="metric-name">Calendar</span><span class="metric-value">Tabel bulanan</span></div>' +
+        '<div class="metric-row"><span class="metric-name">More</span><span class="metric-value">Accounts · Export · Safety</span></div>';
+    
+    var recent = getMonthTxs().slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); }).slice(0, 5);
+    document.getElementById('dashboardRecent').innerHTML = recent.length ? 
+        recent.map(function(t){ 
+            var c = catLookup[t.category] || {l:t.category}; 
+            return '<div class="metric-row"><span class="metric-name">' + t.date + ' · ' + c.l + '</span><span class="metric-value" style="color:' + (t.type === 'income' ? 'var(--income)' : 'var(--expense)') + '">' + (t.type === 'income' ? '+' : '-') + fmtRp(t.amount) + '</span></div>';
+        }).join('') : 
+        '<div class="section-sub">Belum ada transaksi periode ini.</div>';
+    
+    var ac = getAccounts();
+    document.getElementById('dashboardAccounts').innerHTML = ac.map(function(a){
+        var bal = 0;
+        allTxs.forEach(function(t){ if ((t.account || 'bank') === a.id) bal += (t.type === 'income' ? t.amount : -t.amount); });
+        return '<div class="metric-row"><span class="metric-name">' + a.name + '</span><span class="metric-value">' + fmtRp(bal) + '</span></div>';
+    }).join('');
+}
 
 /* ===================== MORE / UTILITIES ===================== */
 var moreWorkspace=document.getElementById('moreWorkspace');
@@ -1535,7 +1900,40 @@ function openMoreView(view){
         html='<div class="more-toolbar"><div><div class="more-toolbar-title">'+title+'</div><div class="section-sub">Backup transaksi + data lokal user aktif.</div></div>'+actions+'</div><div class="more-list"><div class="more-item"><div class="more-item-main"><div class="more-item-title"><i class="fa-solid fa-cloud" style="color:var(--accent);width:18px"></i> Cloud</div><div class="more-item-sub">Firestore Real-time</div></div><span class="more-pill">AKTIF</span></div><div class="more-item"><div class="more-item-main"><div class="more-item-title">Restore Backup JSON</div><div class="more-item-sub">Restore ke lokal untuk user aktif.</div></div><button class="btn-secondary" id="moreRestore">Restore</button></div></div>';
     } else if(view==='settings'){
         title='Settings';
-        html='<div class="more-toolbar"><div><div class="more-toolbar-title">Preferensi DuitKu</div><div class="section-sub">Pengaturan tersimpan di perangkat ini.</div></div></div><div class="settings-row"><div class="settings-label"><strong>Format Mata Uang</strong><span>Format nominal aplikasi</span></div><select class="settings-select" id="settingCurrency"><option value="IDR">IDR — Rupiah</option></select></div><div class="settings-row"><div class="settings-label"><strong>Animasi</strong><span>Animasi counter dan perpindahan panel</span></div><select class="settings-select" id="settingMotion"><option value="on">Aktif</option><option value="off">Minimal</option></select></div><div class="settings-row"><div class="settings-label"><strong>Reset data lokal</strong><span>Hanya membersihkan cache browser</span></div><button class="btn-secondary" id="moreClear">Bersihkan Cache</button></div>';
+        var motion = localStorage.getItem('duitku_motion')||'on';
+        var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+        var paydayDate = parseInt(localStorage.getItem('duitku_payday_date') || '28', 10);
+        
+        html='<div class="more-toolbar"><div><div class="more-toolbar-title">Preferensi DuitKu</div><div class="section-sub">Pengaturan tersimpan di perangkat ini.</div></div></div>' +
+             '<div class="settings-row"><div class="settings-label"><strong>Format Mata Uang</strong><span>Format nominal aplikasi</span></div><select class="settings-select" id="settingCurrency"><option value="IDR">IDR — Rupiah</option></select></div>' +
+             '<div class="settings-row"><div class="settings-label"><strong>Animasi</strong><span>Animasi counter dan perpindahan panel</span></div><select class="settings-select" id="settingMotion"><option value="on">Aktif</option><option value="off">Minimal</option></select></div>' +
+             // SETTING PERIODE GAJIAN
+             '<div class="settings-row" style="border-bottom:2px solid var(--accent);padding-bottom:16px;margin-bottom:8px">' +
+             '<div class="settings-label"><strong style="color:var(--accent)">📅 Periode Gajian</strong><span>Atur tanggal gajian/pemasukan utama untuk perhitungan siklus keuangan 28-28</span></div>' +
+             '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+             '<select class="settings-select" id="settingPayday" style="min-width:80px">' +
+             '<option value="1">Aktif</option>' +
+             '<option value="0">Nonaktif</option>' +
+             '</select>' +
+             '<span style="color:var(--fg-muted);font-size:11px">Tanggal</span>' +
+             '<select class="settings-select" id="settingPaydayDate" style="min-width:70px">' +
+             Array.from({length:31}, (_,i) => `<option value="${i+1}">${i+1}</option>`).join('') +
+             '</select>' +
+             '</div>' +
+             '</div>' +
+             // Info budget & target
+             '<div style="padding:10px 14px;background:var(--bg-raised);border-radius:10px;margin:6px 0 12px;font-size:12px;color:var(--fg-dim);border-left:3px solid var(--warning)">' +
+             '<i class="fa-solid fa-bullseye" style="color:var(--warning);margin-right:6px"></i> ' +
+             '<strong>Budget & Target mengikuti siklus gajian (28-28).</strong> ' +
+             'Data tidak reset di awal bulan kalender, melainkan mengikuti periode gajian yang dipilih.' +
+             '</div>' +
+             // Info periode saat ini
+             '<div style="padding:8px 14px;background:var(--bg);border-radius:8px;margin:4px 0 10px;font-size:11px;color:var(--fg-muted)">' +
+             '<i class="fa-regular fa-calendar" style="color:var(--accent);margin-right:6px"></i> ' +
+             'Periode saat ini: <strong style="color:var(--fg)">' + getCurrentPaydayPeriod().label + '</strong> ' +
+             '(' + getCurrentPaydayPeriod().startDate + ' — ' + getCurrentPaydayPeriod().endDate + ')' +
+             '</div>' +
+             '<div class="settings-row"><div class="settings-label"><strong>Reset data lokal</strong><span>Hanya membersihkan cache browser</span></div><button class="btn-secondary" id="moreClear">Bersihkan Cache</button></div>';
     }
     html='<div class="more-backbar"><button class="btn-secondary" id="moreBack"><i class="fa-solid fa-arrow-left"></i> Kembali ke More</button></div>'+html;moreWorkspace.innerHTML=html;
     document.getElementById('moreBack').onclick=function(){moreWorkspace.style.display='none';moreWorkspace.innerHTML='';};
@@ -1631,9 +2029,30 @@ function openMoreView(view){
             motionSel.value=motion;
             motionSel.onchange=function(){localStorage.setItem('duitku_motion',this.value);document.documentElement.classList.toggle('reduce-motion',this.value==='off');toast('Preferensi disimpan','ok');};
         }
+        // Event listener untuk setting payday
+        var paydaySel = document.getElementById('settingPayday');
+        var paydayDateSel = document.getElementById('settingPaydayDate');
+        if(paydaySel) {
+            paydaySel.value = localStorage.getItem('duitku_payday_setting') || '1';
+            paydaySel.onchange = function() {
+                localStorage.setItem('duitku_payday_setting', this.value);
+                toast('Pengaturan periode gajian diperbarui','ok');
+                renderAll();
+                renderBudget();
+            };
+        }
+        if(paydayDateSel) {
+            paydayDateSel.value = localStorage.getItem('duitku_payday_date') || '28';
+            paydayDateSel.onchange = function() {
+                localStorage.setItem('duitku_payday_date', this.value);
+                toast('Tanggal gajian diubah ke tanggal ' + this.value,'ok');
+                renderAll();
+                renderBudget();
+            };
+        }
         var clearBtn = document.getElementById('moreClear');
         if(clearBtn) {
-            clearBtn.onclick=function(){['duitku_txs',budgetStorageKey(),accountsStorageKey(),'duitku_recurring','duitku_motion'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});toast('Cache lokal dibersihkan.','ok');};
+            clearBtn.onclick=function(){['duitku_txs',budgetStorageKey(),accountsStorageKey(),'duitku_recurring','duitku_motion','duitku_payday_setting','duitku_payday_date'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});toast('Cache lokal dibersihkan.','ok');};
         }
     }
     moreWorkspace.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -1789,73 +2208,6 @@ async function showAddUserModal(){
     toast('User '+derived+' berhasil dibuat','ok');openMoreView('users');
   }catch(e){toast('Gagal membuat user: '+e.message,'err');try{if(secondaryAuth)await secondaryAuth.signOut();}catch(x){}}
 }
-function renderDashboard(){
-  var st=getMonthStats(getMonthTxs()), opening=getCurrentMonthOpeningBalance();
-  var totalBalance = opening + st.income - st.expense;
-  var rate = (opening + st.income) > 0 ? ((opening + st.income - st.expense)/(opening + st.income)*100) : 0;
-  
-  // 🔥 SALDO BULAN LALU - BISA NEGATIF
-  var dashOpening = document.getElementById('dashOpening');
-  if (opening < 0) {
-      dashOpening.textContent = '- Rp ' + Math.abs(opening).toLocaleString('id-ID');
-      dashOpening.style.color = 'var(--expense)';
-  } else {
-      dashOpening.textContent = 'Rp ' + opening.toLocaleString('id-ID');
-      dashOpening.style.color = 'var(--opening)';
-  }
-
-  // 🔥 SALDO - BISA NEGATIF
-  var dashBalance = document.getElementById('dashBalance');
-  if (totalBalance < 0) {
-      dashBalance.textContent = '- Rp ' + Math.abs(totalBalance).toLocaleString('id-ID');
-      dashBalance.style.color = 'var(--expense)';
-  } else {
-      dashBalance.textContent = 'Rp ' + totalBalance.toLocaleString('id-ID');
-      dashBalance.style.color = 'var(--accent)';
-  }
-
-  document.getElementById('dashIncome').textContent = fmtRp(st.income);
-  document.getElementById('dashIncome').style.color = 'var(--income)';
-  
-  document.getElementById('dashExpense').textContent = fmtRp(st.expense);
-  document.getElementById('dashExpense').style.color = 'var(--expense)';
-  
-  document.getElementById('dashSaving').textContent = rate.toFixed(1) + '%';
-  document.getElementById('dashSaving').style.color = '#ffb347';
-  
-  document.getElementById('dashboardSubtitle') && (document.getElementById('dashboardSubtitle').textContent = 
-    (isPublisher ? 'Publisher dashboard — melihat ' + (selectedOwnerUid !== currentUser.uid ? 'user ' + selectedOwnerUid : 'dirinya sendiri') : 'Ringkasan keuangan pribadi') + 
-    ' · ' + BULAN[curMonth.getMonth()] + ' ' + curMonth.getFullYear());
-
-  var target=0, pct=0; 
-  document.getElementById('dashboardBudgetSummary').innerHTML = 
-    '<div class="metric-row"><span class="metric-name">Target tabungan</span><span class="metric-value">' + fmtRp(target) + '</span></div>' +
-    '<div class="metric-row"><span class="metric-name">Progress target</span><span class="metric-value">' + pct.toFixed(0) + '%</span></div>' +
-    '<div class="mini-bar"><span style="width:' + pct + '%"></span></div>' +
-    '<div class="metric-row"><span class="metric-name">Skor kesehatan</span><span class="metric-value">' + (document.getElementById('healthScore').textContent || '--') + '</span></div>';
-  
-  document.getElementById('dashboardMenuSummary').innerHTML = 
-    '<div class="metric-row"><span class="metric-name">Transaksi</span><span class="metric-value">' + getMonthTxs().length + '</span></div>' +
-    '<div class="metric-row"><span class="metric-name">Budget & Target</span><span class="metric-value">Aktif</span></div>' +
-    '<div class="metric-row"><span class="metric-name">Analytics</span><span class="metric-value">6 bulan</span></div>' +
-    '<div class="metric-row"><span class="metric-name">Calendar</span><span class="metric-value">Tabel bulanan</span></div>' +
-    '<div class="metric-row"><span class="metric-name">More</span><span class="metric-value">Accounts · Export · Safety</span></div>';
-  
-  var recent = getMonthTxs().slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); }).slice(0, 5);
-  document.getElementById('dashboardRecent').innerHTML = recent.length ? 
-    recent.map(function(t){ 
-      var c = catLookup[t.category] || {l:t.category}; 
-      return '<div class="metric-row"><span class="metric-name">' + t.date + ' · ' + c.l + '</span><span class="metric-value" style="color:' + (t.type === 'income' ? 'var(--income)' : 'var(--expense)') + '">' + (t.type === 'income' ? '+' : '-') + fmtRp(t.amount) + '</span></div>';
-    }).join('') : 
-    '<div class="section-sub">Belum ada transaksi bulan ini.</div>';
-  
-  var ac = getAccounts();
-  document.getElementById('dashboardAccounts').innerHTML = ac.map(function(a){
-    var bal = 0;
-    allTxs.forEach(function(t){ if ((t.account || 'bank') === a.id) bal += (t.type === 'income' ? t.amount : -t.amount); });
-    return '<div class="metric-row"><span class="metric-name">' + a.name + '</span><span class="metric-value">' + fmtRp(bal) + '</span></div>';
-  }).join('');
-}
 
 /* ===================== EVENT LISTENERS ===================== */
 document.getElementById('filterBar').addEventListener('click', function(e){
@@ -1886,7 +2238,28 @@ document.addEventListener('keydown', function(e){
 tBtnIn.addEventListener('click', function(){ setType('income'); });
 tBtnOut.addEventListener('click', function(){ setType('expense'); });
 
+// Reset budget
+document.getElementById('btnResetBudget').addEventListener('click', function(){
+    localStorage.removeItem(budgetStorageKey());
+    // Hapus custom target
+    var paydaySetting = localStorage.getItem('duitku_payday_setting') || '1';
+    var period = getCurrentPaydayPeriod();
+    var key = 'duitku_target_' + (selectedOwnerUid || 'default') + '_' + 
+              (paydaySetting === '1' ? 'payday_' + period.startDate : 'calendar');
+    localStorage.removeItem(key);
+    renderBudget();
+    toast('Budget & Target dikembalikan ke default', 'ok');
+});
+
 /* ===================== INIT ===================== */
+// Set default payday setting jika belum ada
+if (!localStorage.getItem('duitku_payday_setting')) {
+    localStorage.setItem('duitku_payday_setting', '1');
+}
+if (!localStorage.getItem('duitku_payday_date')) {
+    localStorage.setItem('duitku_payday_date', '28');
+}
+
 setAppVisibility(false);
 
 window.addEventListener('beforeunload', function(){ if(unsubscribe) try{unsubscribe();}catch(e){} });
