@@ -58,11 +58,6 @@
         .stat-card.s-expense .stat-icon{background:var(--expense-bg);color:var(--expense)}
         .stat-card.s-balance .stat-icon{background:var(--accent-glow);color:var(--accent)}
 
-        .trend-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;margin-top:6px}
-        .trend-badge.up{background:var(--income-bg);color:var(--income)}
-        .trend-badge.down{background:var(--expense-bg);color:var(--expense)}
-        .trend-badge.neutral{background:rgba(74,90,115,.15);color:var(--fg-muted)}
-
         .health-ring{width:52px;height:52px;position:relative;flex-shrink:0}
         .health-ring svg{transform:rotate(-90deg)}
         .health-ring .ring-bg{fill:none;stroke:var(--border);stroke-width:4}
@@ -191,8 +186,6 @@
             .search-wrap{max-width:100%;order:10;flex-basis:100%}
             .tx-actions{opacity:1}
             .health-section{flex-direction:column;text-align:center}
-            .calendar-filter-wrap{flex-direction:column;align-items:stretch}
-            .calendar-filter-wrap input[type="date"]{width:100%}
         }
         @media(max-width:480px){.stats-grid{grid-template-columns:1fr!important}.stats-grid .stat-card:last-child{grid-column:auto}}
         @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
@@ -211,7 +204,6 @@
         .budget-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.budget-card{padding:18px}.budget-line{margin:15px 0}.budget-top{display:flex;justify-content:space-between;gap:10px;font-size:11px}.budget-top strong{font-size:12px;color:var(--fg)}.budget-track{height:7px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:8px}.budget-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#00ffc8)}.budget-fill.warn{background:linear-gradient(90deg,var(--warning),#ff8c42)}.budget-fill.danger{background:linear-gradient(90deg,var(--expense),#ff7b91)}
         .more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.more-card{padding:18px;min-height:150px;position:relative;overflow:hidden}.more-card i.more-icon{font-size:18px;color:var(--accent);margin-bottom:13px}.more-card h4{font-size:14px;color:var(--fg);margin-bottom:5px}.more-card p{font-size:11px;color:var(--fg-muted);line-height:1.5}.more-card button{margin-top:12px}.more-card .more-arrow{position:absolute;right:16px;top:16px;color:var(--fg-muted);font-size:11px}.more-card:hover{border-color:rgba(0,232,162,.28);transform:translateY(-2px);cursor:pointer}.more-card:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,232,162,.08)}.more-workspace{margin-top:14px;padding:20px}.more-backbar{display:flex;justify-content:flex-start;margin-bottom:12px}.more-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px;flex-wrap:wrap}.more-toolbar-title{font:700 15px 'Space Grotesk';color:var(--fg)}.more-list{display:grid;gap:9px}.more-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid var(--border);background:var(--bg-raised);border-radius:11px}.more-item-main{min-width:0}.more-item-title{font-size:12px;font-weight:700;color:var(--fg)}.more-item-sub{font-size:10px;color:var(--fg-muted);margin-top:3px}.more-pill{font-size:10px;font-weight:700;padding:4px 8px;border-radius:99px;background:var(--accent-glow);color:var(--accent);white-space:nowrap}
         
-        /* Calendar Styles */
         .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden}
         .calendar-head{font-size:9px;color:var(--fg-muted);text-align:center;padding:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
         .calendar-day{min-height:72px;border:0;border-radius:0;padding:8px;background:var(--bg-raised);font-size:10px;cursor:pointer;color:var(--fg);transition:background .2s}
@@ -222,7 +214,6 @@
         .calendar-day .day-num{font-weight:700}
         .calendar-day .day-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;margin-left:3px}
         
-        /* Calendar Filter - Clean Minimal */
         .calendar-filter-wrap{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-raised);border-radius:10px;border:1px solid var(--border);flex-wrap:wrap}
         .calendar-filter-wrap .date-input-group{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border-light);border-radius:7px;padding:2px 6px 2px 4px;transition:border-color .2s}
         .calendar-filter-wrap .date-input-group:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
@@ -667,7 +658,7 @@ var isPublisher = false;
 var calStartDate = null;
 var calEndDate = null;
 
-/* ===================== SALDO AWAL BULAN ===================== */
+/* ===================== SALDO AWAL BULAN - FIXED ===================== */
 function getOpeningBalanceKey() {
     return 'opening_balance_' + (selectedOwnerUid || 'default');
 }
@@ -677,17 +668,24 @@ function getOpeningBalance(year, month) {
         var key = getOpeningBalanceKey() + '_' + year + '_' + month;
         var val = localStorage.getItem(key);
         return val ? parseInt(val, 10) : 0;
-    } catch(e) { return 0; }
+    } catch(e) { 
+        console.warn('Get opening balance error:', e);
+        return 0; 
+    }
 }
 
 function saveOpeningBalance(year, month, amount) {
     try {
         var key = getOpeningBalanceKey() + '_' + year + '_' + month;
         localStorage.setItem(key, String(amount));
-    } catch(e) { console.warn('Save opening balance failed:', e); }
+        console.log('💾 Saldo awal disimpan:', key, '=', amount);
+    } catch(e) { 
+        console.warn('Save opening balance failed:', e); 
+    }
 }
 
 function calculatePreviousMonthBalance(year, month) {
+    // Bulan sebelumnya
     var prevMonth = month - 1;
     var prevYear = year;
     if (prevMonth < 0) {
@@ -695,36 +693,61 @@ function calculatePreviousMonthBalance(year, month) {
         prevYear = year - 1;
     }
     
+    // Ambil semua transaksi di bulan sebelumnya
     var prevTxs = allTxs.filter(function(t) {
         var d = new Date(t.date);
         return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
     });
     
-    var stats = getMonthStats(prevTxs);
+    // Hitung total pemasukan & pengeluaran bulan sebelumnya
+    var inc = 0, exp = 0;
+    prevTxs.forEach(function(t) {
+        if (t.type === 'income') inc += t.amount;
+        else exp += t.amount;
+    });
+    
+    // Ambil saldo awal bulan sebelumnya (jika ada)
     var prevOpening = getOpeningBalance(prevYear, prevMonth);
-    return prevOpening + stats.income - stats.expense;
+    
+    // SALDO AKHIR BULAN LALU = Saldo Awal + (Pemasukan - Pengeluaran)
+    var akhirBulanLalu = prevOpening + inc - exp;
+    
+    console.log('📊 Perhitungan saldo bulan sebelumnya:');
+    console.log('  - Bulan:', BULAN[prevMonth], prevYear);
+    console.log('  - Saldo awal:', prevOpening);
+    console.log('  - Pemasukan:', inc);
+    console.log('  - Pengeluaran:', exp);
+    console.log('  - Saldo akhir:', akhirBulanLalu);
+    
+    // SIMPAN sebagai saldo awal bulan ini
+    saveOpeningBalance(year, month, akhirBulanLalu);
+    
+    return akhirBulanLalu;
 }
 
 function getCurrentMonthOpeningBalance() {
     var year = curMonth.getFullYear();
     var month = curMonth.getMonth();
     
+    // Cek apakah sudah ada saldo awal yang disimpan untuk bulan ini
     var saved = getOpeningBalance(year, month);
     if (saved > 0) {
+        console.log('📌 Saldo awal bulan ini (dari cache):', saved);
         return saved;
     }
     
+    // Jika belum ada, hitung dari bulan sebelumnya
+    console.log('🔄 Menghitung saldo awal dari bulan sebelumnya...');
     var prevBalance = calculatePreviousMonthBalance(year, month);
-    if (prevBalance !== 0) {
-        saveOpeningBalance(year, month, prevBalance);
-        return prevBalance;
-    }
-    
-    return 0;
+    console.log('📌 Saldo awal bulan ini (hasil perhitungan):', prevBalance);
+    return prevBalance;
 }
 
 /* ===================== HELPERS ===================== */
-function fmtRp(n){ return 'Rp ' + Math.abs(n).toLocaleString('id-ID'); }
+function fmtRp(n){ 
+    if (n === undefined || n === null) return 'Rp 0';
+    return 'Rp ' + Math.abs(n).toLocaleString('id-ID'); 
+}
 function pad(n){ return n < 10 ? '0'+n : ''+n; }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -986,8 +1009,17 @@ function renderStats() {
     var txs = getMonthTxs();
     var stats = getMonthStats(txs);
     
+    // 🔥 AMBIL SALDO AWAL BULAN INI
     var openingBalance = getCurrentMonthOpeningBalance();
+    
+    // 🔥 HITUNG TOTAL SALDO = Saldo Awal + Pemasukan - Pengeluaran
     var totalBalance = openingBalance + stats.income - stats.expense;
+
+    console.log('📊 RENDER STATS:');
+    console.log('  - Saldo awal bulan ini:', openingBalance);
+    console.log('  - Pemasukan bulan ini:', stats.income);
+    console.log('  - Pengeluaran bulan ini:', stats.expense);
+    console.log('  - Total saldo:', totalBalance);
 
     document.getElementById('vOpening').textContent = fmtRp(openingBalance);
     document.getElementById('vIncome').textContent = fmtRp(stats.income);
@@ -1429,7 +1461,6 @@ function openMoreView(view){
         html='<div class="more-toolbar"><div><div class="more-toolbar-title">'+title+'</div><div class="section-sub">Total saldo akun: '+fmtRp(total)+'</div></div>'+actions+'</div><div class="more-list">'+accountHtml+'</div>';
     } else if(view==='calendar'){
         title='Calendar';
-        // Set default dates
         var now = new Date();
         var firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         var defaultStart = firstDay.toISOString().split('T')[0];
@@ -1438,7 +1469,6 @@ function openMoreView(view){
         if (calStartDate) defaultStart = calStartDate;
         if (calEndDate) defaultEnd = calEndDate;
         
-        // Minimal filter - only date inputs
         actions = '<div class="calendar-filter-wrap">' +
             '<div class="date-input-group"><i class="fa-regular fa-calendar"></i><input type="date" id="calStartDate" value="'+defaultStart+'"></div>' +
             '<span class="date-separator">—</span>' +
@@ -1453,7 +1483,6 @@ function openMoreView(view){
             return d >= startDate && d <= endDate;
         });
         
-        // Build calendar grid
         var y = startDate.getFullYear();
         var m = startDate.getMonth();
         var first = new Date(y, m, 1);
