@@ -765,7 +765,7 @@ function setSyncStatus(status, msg) {
     var dot = document.getElementById('syncDot');
     var label = document.getElementById('syncLabel');
     dot.className = 'sync-dot ' + status;
-    label.textContent = msg || (status==='online'?'Real-time':status==='offline'?'Mode Lokal':'Menghubungkan...');
+    label.textContent = msg || (status==='online'?'Online':status==='offline'?'Offline':'Menghubungkan...');
 }
 
 function setAppVisibility(show){
